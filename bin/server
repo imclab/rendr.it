@@ -1,0 +1,125 @@
+#!/usr/bin/env python
+#
+#Copyright (C) 2012 TaguchiMarketing Pty Ltd
+#
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the "Software"), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in
+#all copies or substantial portions of the Software.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#SOFTWARE.
+
+import os
+import rendr
+import pkg_resources
+import tornado.web
+import tornado.ioloop
+import tornado.httpserver
+import tornado.netutil
+import logging as log
+from rendr import asyncs3
+from rendr import asyncprocess
+from optparse import OptionParser, OptionGroup
+
+
+if __name__ == "__main__":
+    assert pkg_resources.resource_exists("rendr", "script/rasterize")
+    assert not pkg_resources.resource_isdir("rendr", "script/rasterize")
+    assert pkg_resources.resource_exists("rendr", "template")
+    assert pkg_resources.resource_isdir("rendr", "template")
+    assert pkg_resources.resource_exists("rendr", "static")
+    assert pkg_resources.resource_isdir("rendr", "static")
+
+    log.basicConfig(format="%(asctime)-15s %(message)s", level=log.DEBUG)
+
+    usage = "usage: %prog [options] S3_BUCKET"
+    parser = OptionParser(usage=usage, version="%prog 1.0dev1",
+        add_help_option=False, description="Runs an HTML/CSS to image convers\
+ion server. Expects AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment v\
+ariables to be set.")
+
+    parser.add_option("--help", action="help",
+        help="show this help message and exit")
+    parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
+        help="displays verbose error messages")
+    parser.add_option("--debug", action="store_true", dest="debug",
+        help="run in debug mode (restart on code changes)")
+
+    cmd_group = OptionGroup(parser, "Process Options")
+    cmd_group.add_option("-p", "--port", type="int",
+        help="listen for public HTTP requests on PORT",
+        dest="port", default=80)
+    cmd_group.add_option("--timeout", type="int",
+        help="limit individual request processing time to TIMEOUT seconds",
+        dest="timeout", default=10)
+    parser.add_option_group(cmd_group)
+
+    cmd_group = OptionGroup(parser, "Content Options")
+    cmd_group.add_option("--cdn-domain", type="string",
+        help="serve static resources from DOMAIN", dest="cdn_domain",
+        default="d12dhzso7pssl1.cloudfront.net")
+    cmd_group.add_option("--public-domain", type="string",
+        help="serve public rendrs from DOMAIN", dest="public_domain",
+        default="rendr.it")
+
+    cmd_group = OptionGroup(parser, "Environment Options")
+    cmd_group.add_option("--phantomjs", type="string", dest="phantomjs",
+        help="path to PhantomJS binary", default="/usr/bin/phantomjs")
+
+    (opts, args) = parser.parse_args()
+
+    static_dir = pkg_resources.resource_filename("rendr", "static")
+    template_dir = pkg_resources.resource_filename("rendr", "template")
+    rasterize_path = pkg_resources.resource_filename("rendr",
+        "script/rasterize")
+
+    # Asset setup
+    if opts.debug:
+        environment = rendr.ASSET_MANIFEST
+    else:
+        # Build bundles and generate a versioned URL based on the bundle
+        # content hash
+        if opts.cdn_domain:
+            cdn = "//%s" % opts.cdn_domain
+        else:
+            cdn = ""
+
+        environment = {}
+        for key in rendr.ASSET_MANIFEST:
+            ext = "js" if key.endswith("js") else "css"
+
+            rendr.StaticBuild.build(static_dir, key, ext)
+            environment[key] = ["%s/min/%s/%s.%s?v=%s" % (cdn, ext, key, ext,
+                rendr.StaticBuild._bundles[key]["sha1"][0:8])]
+
+    # Set up S3 database
+    db = asyncs3.S3DB(key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+        key=os.getenv('AWS_SECRET_ACCESS_KEY'), bucket=args[0])
+
+    # Application handler init
+    app = tornado.web.Application([
+            (r"/min/(js|css)/(.*)", rendr.StaticBuild),
+            (r"/library/([^./]+)?", rendr.LibraryManager, {"db": db}),
+            (r"/rendr/([^./]+)/([^./]+)", rendr.RendrManager, {"db": db}),
+            (r"/.*\.(gif|png|jpg|html|json)", rendr.Renderer,
+                {"db": db, "timeout": opts.timeout, "port": opts.port,
+                "phantomjs": opts.phantomjs, "rasterize": rasterize_path,
+                "static_subdomains": ("about", "static")}),
+            (r"/", rendr.UI, {"environment": environment})
+        ], debug=opts.debug, gzip=True, template_path=template_dir,
+        static_path=static_dir, static_handler_class=rendr.StaticFile)
+
+    http_server = tornado.httpserver.HTTPServer(app)
+    http_server.listen(opts.port)
+    tornado.ioloop.IOLoop.instance().start()

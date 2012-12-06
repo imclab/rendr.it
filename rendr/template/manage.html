@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+
+    <!-- Set the viewport width to device width for mobile -->
+    <meta name="viewport" content="width=device-width" />
+
+    <title>rendr.it</title>
+
+    <!-- Include head block assets -->
+    {% for f in environment['styles'] %}
+        <link rel="stylesheet" href="{{ f }}">
+    {% end %}
+
+</head>
+<body class="theme-dark">
+    <form>
+        <header>
+            <div id="library-ctl">
+                <div id="rendr-menu" class="button ctl radius dropdown first">
+                    <b>Rendr</b>.it
+                    <ul class="actions-menu">
+                        <li><a href="#" data-reveal-id="new-library" data-animation="fade"><span>⌘L</span>New Library…</a></li>
+                        <li><a href="#" data-reveal-id="load-library" data-animation="fade"><span>⌘O</span>Load Library…</a></li>
+                    </ul>
+                </div>
+
+                <div id="library-menu" class="button ctl radius dropdown disabled">
+                    <span class="library-name">(No library loaded)</span>
+                    <ul></ul>
+                </div>
+            </div>
+            <div id="preview-ctl">
+                <a href="#" class="button ctl menu radius disabled btn-new-rendr" ><i class="icon-file"></i>&nbsp; New</a>
+                <a href="#" class="button ctl radius disabled btn-save-rendr"><i class="icon-save"></i>&nbsp; Save</a>
+
+                <ul class="button-group radius">
+                    <li><a href="#" class="button ctl active radius live btn-live-preview has-tooltip" title="Live preview"><span><i class="icon-eye-open"></i></span></a></li>
+                    <li><a href="#" class="button ctl rendered btn-rendered-preview has-tooltip" title="Image preview"><span><i class="icon-picture"></i></span></a></li>ƒ
+                </ul>
+
+                <div id="url-input">
+                    <div class="url"><span class="url-prefix">http://l</span><span class="libraryId"></span><span class="url-host">.rendr.it/</span><span class="rendrId"></span><span class="paramString has-tooltip" contenteditable="true" title="Edit parameters"></span><span class="url-postfix">.png</span><span class="queryString has-tooltip" contenteditable="true" title="Edit query string"></span></div>
+                </div>
+
+                <!-- <a href="#" data-reveal-id="options" data-animation="fade" class="button ctl radius options"><i class="icon-cog"></i></a> -->
+                <ul class="button-group radius">
+                    <li><a href="#" data-reveal-id="options" data-animation="fade" class="button ctl radius options has-tooltip" title="Theme options"><i class="icon-cog"></i></a></li>
+                    <li><a href="#" data-reveal-id="help" data-animation="fade" class="button ctl radius options has-tooltip northeast" title="Rendr tips"><i class="icon-info-sign"></i></a></li>
+                </ul>
+            </div>
+        </header>
+        <div id="content">
+            <div id="editors">
+                <pre id="css">/* Rendr Default Example: CSS content */
+
+@font-face {
+    font-family: 'Alegreya';
+    font-style: italic;
+    font-weight: 900;
+    src: url(//themes.googleusercontent.com/static/fonts/alegreya/v4/-L71QLH_XqgYWaI1GbOVhl6YDbH3175F1es-Zl7mOpU.ttf) format('truetype');
+}
+
+div {
+    width: 300px;
+    margin: 0 5px 10px;
+    padding: 15px 40px 10px;
+    background: -webkit-linear-gradient(top, #ec4f58, #c92c35 31%, #fff 31%, #eee);
+    background: -moz-linear-gradient(top, #ec4f58, #c92c35 31%, #fff 31%, #eee);
+    background: linear-gradient(top, #ec4f58, #c92c35 31%, #fff 31%, #eee);
+    box-shadow: 0 2px 3px 0px rgba(0,0,0,0.3);
+    border-radius: 10px;
+    font: 13px/1.4em Arial, sans-serif;
+    color: #333;
+    text-align: center;
+}
+
+h2 {
+    margin: 0 0 40px;
+    font-size: 32px;
+    line-height: 1em;
+    color: #efefef;
+}
+
+h2 span {
+    display: block;
+    font-size: 16px;
+    line-height: 0.8;
+}
+
+h3 {
+    margin: 0 0 20px;
+    font: bold italic 68px/1em 'Alegreya', "Bookman Old Style", "Trebuchet MS", "New Times Roman", Georgia, serif;
+    color: #111;
+    -ms-transform: rotate(-3deg);
+    -moz-transform: rotate(-3deg);
+    -webkit-transform: rotate(-3deg);
+    transform: rotate(-3deg);
+}
+
+a {
+    color: #00aeef;
+}
+</pre>
+                <pre id="html">&lt;!-- Rendr Default Example: HTML body content -->
+
+&lt;div>
+    &lt;h2>HELLO &lt;span>my name is&lt;/span>&lt;/h2>
+    &lt;h3>Rendr.it&lt;/h3>
+    &lt;p>To get started, &lt;a href="#" data-reveal-id="new-library" data-animation="fade">create a new library&lt;/a> or check out our &lt;a href="#" data-reveal-id="help" data-anmiation="fade">help page&lt;/a> for some handy tips.&lt;/p>
+&lt;/div>
+</pre>
+            </div>
+            <div id="preview" class="preview-wood">
+                <div class="container"><iframe src="about:blank"></iframe></div>
+                <div class="status">
+                    <dl>
+                        <dt>Dimensions:</dt>
+                        <dd><span class="width">--</span> × <span class="height">--</span> px</dd>
+
+                        <dt>File Size:</dt>
+                        <dd><span class="filesize">--</span> KB</dd>
+
+                        <dt>Render Time:</dt>
+                        <dd><span class="rendertime">--</span> sec</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Reveal modals -->
+    <div id="load-library" class="reveal-modal small">
+        <div class="initial">
+            <h2>Load Library</h2>
+            <p class="lead">Please enter your library&rsquo;s ID and secret key.</p>
+            <form>
+                <input type="text" name="libraryId" placeholder="Library ID" />
+                <input type="text" name="libraryKey" placeholder="Secret Key" />
+            </form>
+
+            <p>These values were shown to you when you created your library.</p>
+
+            <a href="#" class="button primary radius btn-load-library-submit">Load Library</a>
+            <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+        </div>
+
+        <div class="error">
+            <h2>Error</h2>
+            <p class="lead">Sorry, the library you attempted to load could not be accessed. Please check your Library ID
+            and Secret Key, and try again.</p>
+            <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+        </div>
+    </div>
+
+    <div id="new-library" class="reveal-modal small">
+        <div class="initial">
+            <h2>New Library</h2>
+
+            <p class="panel warning">Once your library has been created, you&rsquo;ll be shown a <b>Library ID</b> and a <b>Secret Key</b>.
+            Make sure you copy these values to a secure location, such as a password manager.
+            You will need these values to access and modify your rendrs.</p>
+
+            <form>
+                <input type="text" name="libraryName" placeholder="Library Name" />
+                <a href="#" class="button primary radius btn-new-library-submit">Create Library</a>
+            </form>
+
+            <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+        </div>
+
+        <div class="success">
+            <h2>Library Credentials</h2>
+            <p class="lead">Your library has been created.</p>
+            <dl>
+                <dt><strong>Library ID</strong></dt>
+                <dd><input type="text" class="library-id" readonly="readonly" /></dd>
+                <dt><strong>Secret Key</strong></dt>
+                <dd><input type="text" class="secret-key" readonly="readonly" /></dd>
+            </dl>
+            <p>Please copy these values to a secure location, such as a password manager. If you lose them, you will not
+            be able to access or modify your rendrs.</p>
+
+            <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+        </div>
+
+        <div class="error">
+            <h2>Error</h2>
+            <p class="lead">Sorry, your library could not be created. Please try again later.</p>
+            <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+        </div>
+    </div>
+
+    <div id="new-rendr" class="reveal-modal small">
+        <div class="initial">
+            <h2>New Rendr</h2>
+            <p class="lead">Please enter the ID of your new rendr.</p>
+            <form><input type="text" name="rendrId" placeholder="Rendr ID" /></form>
+
+            <p>This ID will form part of the rendr&rsquo;s URL, and
+            cannot be modified once the rendr is created.</p>
+
+            <form>
+                Create with:
+                <label><input name="contentSource" type="radio" value="current" checked="checked" /> Current content</label>
+                <label><input name="contentSource" type="radio" value="empty" /> Empty content</label>
+            </form>
+
+            <a href="#" class="button radius btn-new-rendr-submit">Create Rendr</a>
+            <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+        </div>
+
+        <div class="error">
+            <h2>Error</h2>
+            <p class="lead">Sorry, your rendr could not be created. Please try again.</p>
+            <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+        </div>
+    </div>
+
+    <div id="save-rendr-error" class="reveal-modal small">
+        <h2>Error</h2>
+        <p class="lead">Sorry, your rendr could not be saved. Please try again.</p>
+        <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+    </div>
+
+    <div id="load-rendr-error" class="reveal-modal small">
+        <h2>Error</h2>
+        <p class="lead">Sorry, your rendr could not be loaded. Please try again.</p>
+        <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+    </div>
+
+    <div id="options" class="reveal-modal small">
+        <h2>Options</h2>
+
+        <form>
+            <fieldset>
+                <h5>Theme</h5>
+                <ul class="swatch-library">
+                    <li><input type="radio" name="theme" value="theme-dark" id="theme-dark" checked="checked" /> <label for="theme-dark">Dark</label></li>
+                    <li><input type="radio" name="theme" value="theme-light" id="theme-light" /> <label for="theme-light">Light</label></li>
+                </ul>
+            </fieldset>
+            <fieldset>
+                <h5>Preview style</h5>
+                <ul class="swatch-library">
+                    <li><input type="radio" name="gridTheme" value="preview-paper" id="preview-paper" /> <label for="preview-paper">Paper Grid</label></li>
+                    <li><input type="radio" name="gridTheme" value="preview-chequerboard" id="preview-chequerboard" /> <label for="preview-chequerboard">Transparent Chequerboard</label></li>
+                    <li><input type="radio" name="gridTheme" value="preview-wood" id="preview-wood" checked="checked" /> <label for="preview-wood">Wood</label></li>
+                    <li><input type="radio" name="gridTheme" value="preview-blueprint" id="preview-blueprint" /> <label for="preview-blueprint">Blueprint</label></li>
+                    <li>
+                        <input type="radio" name="gridTheme" id="preview-bgcolour" /> <label for="preview-bgcolour" id="colour-swatch">Background color</label>
+                        <input type="text" id="colour" class="radius" />
+                        <div id="colourpicker"></div>
+                    </li>
+                </ul>
+
+            </fieldset>
+        </form>
+
+        <a href="#" class="button radius btn-options-submit">Save Options</a>
+        <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
+    </div>
+    
+    <div id="help" class="reveal-modal xlarge">
+
+        <h2>Rendr Tips</h2>
+
+        <dl class="tabs three-up">
+            <dd class="active"><a href="#help-library"><i class="icon-book"></i> Libraries</a></dd>
+            <dd><a href="#help-code"><i class="icon-pencil"></i> Code Tips</a></dd>
+            <dd><a href="#help-result"><i class="icon-download"></i> Parameters</a></dd>
+        </dl>
+        <ul class="tabs-content">
+            <li class="active" id="help-libraryTab">
+                <h5>About Rendr.it</h5>
+
+                <p>Rendr.it enables you to create images based on HTML, CSS and JavaScript snippets, as well as externally-hosted scripts or images. The final image can be customised via URL parameters or query strings.</p>
+
+                <h5>How do I get started?</h5>
+                <p>You'll need to create a new library to store your rendrs. Just select <br /><kbd>New Library...</kbd> under the Rendr.it menu to create one.</p>
+                <p>You can open an existing library by selecting <kbd>Open Library...</kbd> under the Rendr.it menu. It will require your Library ID and Secret Key.</p>
+
+                <h5>How do I publish my rendrs?</h5>
+                <p>Use a CDN (for example, Amazon CloudFront) or a reverse proxy with your unique domain name (<kbd>lXYZ.rendr.it</kbd>, shown in the top-right corner of the screen). We will block your rendrs temporarily if you exceed 5 requests per second.</p>
+
+                <h5>How do I recover my Secret Key if I lose it?</h5>
+                <p>You don't. Your existing rendrs will still be accessible, but you'll have to migrate to a new library if you want to make any changes. All rendr code is publicly accessible though — just add <kbd>.json</kbd> to the end of your URL to get the original code.</p>
+
+                <h5>Can I change my Secret Key if I think it's been compromised?</h5>
+                <p>No. Create a new library, and migrate your rendrs to it.</p>
+
+                <h5>Can I (contribute code|request features|run it on my servers)?</h5>
+                <p>Yes. Source is available on <a href="https://github.com/taguchimail/rendr.it">GitHub</a>; it's MIT-licensed so feel free to send us a pull request or run a customised version yourself.</p>
+            </li>
+            <li id="help-codeTab">
+                <h5>CSS</h5>
+                <p>As we use Webkit to render images, you can use any CSS rules that are supported by the Safari or Chrome browsers.</p>
+
+                <h5>Can I use Javascript?</h5>
+                <p>Yes, Javascript is allowed, just add it to the HTML section. You can even import Javascript libraries like jQuery or Mootools if you so desire.</p>
+
+                <h5>Preview panel</h5>
+                <p>To toggle between the Live Preview and the Image Preview, just click on the required preview mode to the left of the rendr URL. Note that Image Preview is only available for rendrs that have not been modified since they were last saved.</p>
+            </li>
+            <li id="help-resultTab">
+                <h5>URL parameters</h5>
+                <p>You can pass arbitrary slash-separated parameters to your rendr in the URL, between the Rendr ID and the file extension (which determines the type of image generated). These parameters are decoded and added to the window.query.params array.</p>
+
+                <h5>Query strings</h5>
+                <p>All query-string parameters are decoded and made available as strings via the window.query object. For example, the query string <kbd>?width=500</kbd> results in <kbd>window.query.width == "500"</kbd>. Repeating query-string keys will result in the corresponding value being an array.</p>
+
+                <h5>Moustache templates</h5>
+                <p>Your HTML and CSS support Moustache replacement syntax for URL and query-string parameters. For example, the query string <kbd>?width=500</kbd> would result in <kbd>{<span>{width}</span>}</kbd> being replaced by <kbd>500</kbd> in your HTML or CSS.</p>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Included body assets -->
+    {% for f in environment['body_js'] %}
+        <script src="{{ f }}"></script>
+    {% end %}
+</body>
+</html>

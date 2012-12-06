@@ -1,0 +1,97 @@
+/*
+Copyright (C) 2012 TaguchiMarketing Pty Ltd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+var page = require('webpage').create(),
+    system = require('system'),
+    url, output, width, height, top, left, bottom, right, loadedUrl = false;
+
+if (system.args.length != 3 && system.args.length != 7) {
+    console.log(
+        'Usage: rasterize URL OUTPUT_FILENAME ' +
+            '[REGION_TOP REGION_LEFT REGION_BOTTOM REGION_RIGHT]'
+    );
+    phantom.exit(1);
+}
+
+url = system.args[1];
+output = system.args[2];
+
+page.settings = {
+    javascriptEnabled: true,
+    XSSAuditingEnabled: false,
+    localToRemoteUrlAccessEnabled: true,
+    loadImages: true,
+    webSecurityEnabled: false  // enable cross-domain XHR etc
+};
+
+// Prevent the page from loading something else instead
+page.onNavigationRequested = function(nextUrl, type, willNavigate, main) {
+    if (nextUrl.indexOf("http://127.0.0.1:8000/") !== 0) {
+        phantom.exit(1);
+    }
+};
+
+page.onResourceRequested = function(resource) {
+    if (resource.url == decodeURI(url)) {
+        // Allow one load of the main page URL
+        if (loadedUrl) {
+            phantom.exit(1);
+        } else {
+            loadedUrl = true;
+        }
+    } else if (resource.url.indexOf('file') == 0) {
+        // Never allow file requests
+        phantom.exit(1);
+    }
+};
+
+page.viewportSize = {height: 1, width: 1};
+
+// Open the page and render the results
+page.open(url, function (status) {
+    if (status !== 'success') {
+        console.log("error: couldn't open " + url);
+        phantom.exit(1);
+    } else {
+        window.setTimeout(function () {
+            var height = page.evaluate(function() { return document.body.height }),
+                width = page.evaluate(function() { return document.body.width });
+            page.viewportSize = {height: height, width: width};
+
+            // Set up clip rect, if defined
+            if (system.args.length > 3) {
+                top = parseInt(system.args[3]);
+                left = parseInt(system.args[4]);
+                bottom = parseInt(system.args[5]);
+                right = parseInt(system.args[6]);
+                page.clipRect = {top: top, left: left,
+                    width: right - left, height: bottom - top};
+            } else {
+                page.clipRect = {top: 0, left: 0, width: width, height: height};
+            }
+
+            page.render(output);
+            console.log("success: written image to " + output);
+            phantom.exit(0);
+        }, 300);
+    }
+});
