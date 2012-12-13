@@ -10,7 +10,7 @@ setup(
         'static/js/ace/*.js', 'static/js/*.js', 'static/robots.txt',
         'static/favicon.ico']},
     install_requires=['tornado>=2.1', 'pystache', 'slimit==dev', 'cssmin',
-        "passlib", "pil>=1.1.7"],
+        "passlib", "pil>=1.1.7", 'collectd>=1.0.2'],
     dependency_links=['git+https://github.com/rspivak/slimit.git#egg=slimit-dev'],
 
     # meta
