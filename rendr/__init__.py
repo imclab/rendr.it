@@ -32,6 +32,7 @@ import cssmin
 import urllib
 import hashlib
 import httplib
+import collectd
 import pystache
 import tempfile
 import datetime
@@ -474,3 +475,46 @@ class StaticFile(tornado.web.StaticFileHandler):
         self.set_header("Vary", "Accept-Encoding")
         self.set_header("Cache-Control", "public, max-age=" +
             str(StaticBuild._cache_time))
+
+
+class CollectdLoggingApplication(tornado.web.Application):
+    """
+    Overrides log_request to push request information (timing, handler, etc.)
+    to a specified collectd instance.
+    """
+
+    def __init__(self, handlers=None, default_hosts="", transforms=None,
+            wsgi=False, **settings):
+        super(CollectdLoggingApplication, self).__init__(
+                handlers, default_hosts, transforms, wsgi, settings
+        )
+
+        self._collectd = None
+        self._collectd_name = self.get("collectd_name", "tornado")
+        if self.settings.get("collectd_server"):
+            collectd_server = self.settings['collectd_server']
+            if ':' in collectd_server:
+                hostname, port = collectd_server.split(':')
+                self._connect_collectd(hostname, port)
+            else:
+                self._connect_collectd(collectd_server)
+
+    def _connect_collectd(self, hostname, port=25826):
+        collectd.start_threads()
+        self._collectd = collectd.Connection(collectd_host=hostname,
+                collectd_port=port, plugin_name=self._collectd_name)
+
+    def log_request(self, handler):
+        super(CollectdLoggingApplication, self).log_request(handler)
+        if self._collectd:
+            handler_name = handler.__class__.__name__
+            response_code = handler.get_status()
+            request_time = handler.request.request_time() * 1000.0
+
+            log_data = {
+                "request_time": request_time,
+                reponse_code: 1
+            }
+
+            self._collectd.requests.record(handler_name, **log_data)
+
