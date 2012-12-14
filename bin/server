@@ -77,6 +77,10 @@ ariables to be set.")
     cmd_group.add_option("--phantomjs", type="string", dest="phantomjs",
         help="path to PhantomJS binary", default="/usr/bin/phantomjs")
 
+    cmd_group = OptionGroup(parser, "Collectd Options")
+    cmd_group.add_option("--collectd-server", type="string",
+        help="log request metrics to SERVER:PORT", dest="collectd_server")
+
     (opts, args) = parser.parse_args()
 
     static_dir = pkg_resources.resource_filename("rendr", "static")
@@ -108,7 +112,7 @@ ariables to be set.")
         key=os.getenv('AWS_SECRET_ACCESS_KEY'), bucket=args[0])
 
     # Application handler init
-    app = tornado.web.Application([
+    app = rendr.CollectdLoggingApplication([
             (r"/min/(js|css)/(.*)", rendr.StaticBuild),
             (r"/library/([^./]+)?", rendr.LibraryManager, {"db": db}),
             (r"/rendr/([^./]+)/([^./]+)", rendr.RendrManager, {"db": db}),
@@ -118,7 +122,8 @@ ariables to be set.")
                 "static_subdomains": ("about", "static")}),
             (r"/", rendr.UI, {"environment": environment})
         ], debug=opts.debug, gzip=True, template_path=template_dir,
-        static_path=static_dir, static_handler_class=rendr.StaticFile)
+        static_path=static_dir, static_handler_class=rendr.StaticFile,
+        collectd_server=opts.collectd_server)
 
     http_server = tornado.httpserver.HTTPServer(app)
     http_server.listen(opts.port)
