@@ -479,19 +479,19 @@ class StaticFile(tornado.web.StaticFileHandler):
 
 class CollectdLoggingApplication(tornado.web.Application):
     """
-    Overrides log_request to push request information (timing, handler, etc.)
+    Overrides `log_request` to push request information (timing, handler, etc.)
     to a specified collectd instance.
     """
 
     def __init__(self, handlers=None, default_hosts="", transforms=None,
             wsgi=False, **settings):
         super(CollectdLoggingApplication, self).__init__(
-                handlers, default_hosts, transforms, wsgi, settings
+                handlers, default_hosts, transforms, wsgi, **settings
         )
 
         self._collectd = None
-        self._collectd_name = self.get("collectd_name", "tornado")
         if self.settings.get("collectd_server"):
+            self._collectd_name = self.settings.get("collectd_name", "tornado")
             collectd_server = self.settings['collectd_server']
             if ':' in collectd_server:
                 hostname, port = collectd_server.split(':')
@@ -515,6 +515,5 @@ class CollectdLoggingApplication(tornado.web.Application):
                 "request_time": request_time,
                 reponse_code: 1
             }
-
             self._collectd.requests.record(handler_name, **log_data)
 
