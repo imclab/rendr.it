@@ -19,18 +19,18 @@ def pack_string(type_code, string):
 
 def pack_value(name, value):
     return "".join([
-        self._pack(TYPE_TYPE_INSTANCE, name),
+        pack(TYPE_TYPE_INSTANCE, name),
         struct.pack("!HHH", TYPE_VALUES, 15, 1),
         struct.pack("<Bd", VALUE_GAUGE, value)
     ])
 
 def pack(id, value):
     if isinstance(id, basestring):
-        return self._pack_value(id, value)
+        return pack_value(id, value)
     elif id in LONG_INT_CODES:
-        return self._pack_numeric(id, value)
+        return pack_numeric(id, value)
     elif id in STRING_CODES:
-        return self._pack_string(id, value)
+        return pack_string(id, value)
     else:
         raise AssertionError("invalid type code " + str(id))
 

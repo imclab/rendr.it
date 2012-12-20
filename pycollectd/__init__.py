@@ -6,7 +6,7 @@ import socket
 import struct
 import time
 
-import tornado.ioloop
+from tornado import ioloop
 
 from constants import *
 from utils import *
@@ -21,18 +21,17 @@ class CollectdClient(object):
         collectd_port = collectd_port or DEFAULT_PORT
         self.collectd_addr = (collectd_hostname, collectd_port)
         self.hostname = hostname or socket.getfqdn()
-        self.port = port or DEFAULT_PORT
         self.plugin_name = plugin_name or DEFAULT_PLUGIN_NAME
         self.plugin_instance = plugin_instance or DEFAULT_PLUGIN_INSTANCE
         self.plugin_type = plugin_type or DEFAULT_PLUGIN_TYPE
-        self.queue = collections.deque()
-        self.io_loop = io_loop or ioloop.IOLoop.Instance()
+        self.send_interval = send_interval or DEFAULT_SEND_INTERVAL
+        self._queue = collections.deque()
+        self.io_loop = io_loop or ioloop.IOLoop.instance()
 
-        send_interval = send_interval or DEFAULT_SEND_INTERVAL
-        self._timer = ioloop.PeriodicCallback(self._process_queue, send_interval, self.io_loop)
+        self._timer = ioloop.PeriodicCallback(self._process_queue, self.send_interval, self.io_loop)
     
     def queue(self, metric, value, cumm_func=None):
-        self.queue.append((metric, value, cumm_func))
+        self._queue.append((metric, value, cumm_func))
 
     def start(self):
         self._timer.start()
@@ -46,21 +45,21 @@ class CollectdClient(object):
         return sent_values
 
     def _summarize_queue(self):
-        values_by_metric = defaultdict(list)
+        values_by_metric = collections.defaultdict(list)
         summed_values = {}
         functions = {}
-        for metric, value, cumm_func in self.queue:
+        for metric, value, cumm_func in self._queue:
             metric = sanitize(metric)
             cumm_func = cumm_func or DEFAULT_CUMM_FUNCTION
             values_by_metric[metric].append(value)
             functions[metric] = cumm_func
-        self.queue.clear()
+        self._queue.clear()
 
-        for metric, values in values:
+        for metric, values in values_by_metric.iteritems():
             summed_values[metric] = functions[metric](values)
         return summed_values
 
-    def _send_values(self, values);
+    def _send_values(self, values):
         values_sent = 0
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
         for packet in self._create_packets(values):
@@ -74,7 +73,7 @@ class CollectdClient(object):
             pack(TYPE_HOST, self.hostname),
             pack(TYPE_TIME, when or time.time()),
             pack(TYPE_PLUGIN, self.plugin_name),
-            pack(TYPE_PLUGIN_INSTANCE, self.plugin_inst),
+            pack(TYPE_PLUGIN_INSTANCE, self.plugin_instance),
             pack(TYPE_TYPE, self.plugin_type),
             pack(TYPE_INTERVAL, self.send_interval)
         ])
