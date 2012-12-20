@@ -16,8 +16,11 @@ __all__ = ["CollectdClient"]
 __version_info__ = (1, 0, 3, "devel", 0)
 __version__ = "{0}.{1}.{2}".format(*__version_info__)
 
+
 class CollectdClient(object):
-    def __init__(self, collectd_hostname, collectd_port=None, hostname=None, plugin_name=None, plugin_instance=None, plugin_type=None, send_interval=None, io_loop=None):
+    def __init__(self, collectd_hostname, collectd_port=None, hostname=None,
+                 plugin_name=None, plugin_instance=None, plugin_type=None,
+                 send_interval=None, io_loop=None):
         collectd_port = collectd_port or DEFAULT_PORT
         self.collectd_addr = (collectd_hostname, collectd_port)
         self.hostname = hostname or socket.getfqdn()
@@ -28,8 +31,12 @@ class CollectdClient(object):
         self._queue = collections.deque()
         self.io_loop = io_loop or ioloop.IOLoop.instance()
 
-        self._timer = ioloop.PeriodicCallback(self._process_queue, self.send_interval, self.io_loop)
-    
+        self._timer = ioloop.PeriodicCallback(
+            self._process_queue,
+            self.send_interval,
+            self.io_loop
+        )
+
     def queue(self, metric, value, cumm_func=None):
         self._queue.append((metric, value, cumm_func))
 
@@ -93,4 +100,3 @@ class CollectdClient(object):
                 curr_len += len(part)
             packets.append("".join(curr))
         return packets
-
