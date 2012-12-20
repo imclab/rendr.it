@@ -18,24 +18,33 @@ __version__ = "{0}.{1}.{2}".format(*__version_info__)
 
 
 class CollectdClient(object):
-    def __init__(self, collectd_hostname, collectd_port=None, hostname=None,
-                 plugin_name=None, plugin_instance=None, plugin_type=None,
-                 send_interval=None, io_loop=None):
-        collectd_port = collectd_port or DEFAULT_PORT
+    def __init__(self, collectd_hostname, **kwargs):
+        collectd_port = kwargs.pop("collectd_port", constants.DEFAULT_PORT)
         self.collectd_addr = (collectd_hostname, collectd_port)
-        self.hostname = hostname or socket.getfqdn()
-        self.plugin_name = plugin_name or DEFAULT_PLUGIN_NAME
-        self.plugin_instance = plugin_instance or DEFAULT_PLUGIN_INSTANCE
-        self.plugin_type = plugin_type or DEFAULT_PLUGIN_TYPE
-        self.send_interval = send_interval or DEFAULT_SEND_INTERVAL
+        self.hostname = kwargs.pop("hostname", socket.getfqdn())
+        self.plugin_name = kwargs.pop(
+            "plugin_name", constants.DEFAULT_PLUGIN_NAME)
+        self.plugin_instance = kwargs.pop(
+            "plugin_instance", constants.DEFAULT_PLUGIN_INSTANCE)
+        self.plugin_type = kwargs.pop(
+            "plugin_type", constants.DEFAULT_PLUGIN_TYPE)
+        self.send_interval = kwargs.pop(
+            "send_interval", constants.DEFAULT_SEND_INTERVAL)
+        self.io_loop = kwargs.pop("io_loop", ioloop.IOLoop.instance())
+
         self._queue = collections.deque()
-        self.io_loop = io_loop or ioloop.IOLoop.instance()
 
         self._timer = ioloop.PeriodicCallback(
             self._process_queue,
             self.send_interval,
             self.io_loop
         )
+
+        if(len(kwargs) != 0):
+            raise ValueError("Unkown keys for {}: {}".format(
+                self.__class__.__name__,
+                ",".join(kwargs.keys())
+            ))
 
     def queue(self, metric, value, cumm_func=None):
         self._queue.append((metric, value, cumm_func))
