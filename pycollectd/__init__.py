@@ -8,8 +8,8 @@ import time
 
 from tornado import ioloop
 
-from constants import *
-from utils import *
+import pycollectd.constants as constants
+import pycollectd.utils as utils
 
 __all__ = ["CollectdClient"]
 
@@ -65,13 +65,14 @@ class CollectdClient(object):
         summed_values = {}
         functions = {}
         for metric, value, cumm_func in self._queue:
-            metric = sanitize(metric)
-            cumm_func = cumm_func or DEFAULT_CUMM_FUNCTION
+            metric = utils.sanitize(metric)
             values_by_metric[metric].append(value)
-            functions[metric] = cumm_func
+            if cumm_func is not None:
+                functions[metric] = cumm_func
         self._queue.clear()
 
         for metric, values in values_by_metric.iteritems():
+            cumm_func = functions.get(metric, constants.DEFAULT_CUMM_FUNCTION)
             summed_values[metric] = functions[metric](values)
         return summed_values
 
@@ -86,23 +87,26 @@ class CollectdClient(object):
 
     def _generate_message_start(self, when=None):
         return "".join([
-            pack(TYPE_HOST, self.hostname),
-            pack(TYPE_TIME, when or time.time()),
-            pack(TYPE_PLUGIN, self.plugin_name),
-            pack(TYPE_PLUGIN_INSTANCE, self.plugin_instance),
-            pack(TYPE_TYPE, self.plugin_type),
-            pack(TYPE_INTERVAL, self.send_interval)
+            utils.pack(constants.TYPE_HOST, self.hostname),
+            utils.pack(constants.TYPE_TIME, when or time.time()),
+            utils.pack(constants.TYPE_PLUGIN, self.plugin_name),
+            utils.pack(constants.TYPE_PLUGIN_INSTANCE, self.plugin_instance),
+            utils.pack(constants.TYPE_TYPE, self.plugin_type),
+            utils.pack(constants.TYPE_INTERVAL, self.send_interval)
         ])
 
     def _create_packets(self, counts, when=None):
         packets = []
         start = self._generate_message_start(when)
-        parts = [pack(name, count) for name, count in counts.items()]
-        parts = [p for p in parts if len(start) + len(p) <= MAX_PACKET_SIZE]
+        parts = [utils.pack(name, count) for name, count in counts.items()]
+        parts = [
+            p for p in parts
+            if len(start) + len(p) <= constants.MAX_PACKET_SIZE
+        ]
         if parts:
             curr, curr_len = [start], len(start)
             for part in parts:
-                if curr_len + len(part) > MAX_PACKET_SIZE:
+                if curr_len + len(part) > constants.MAX_PACKET_SIZE:
                     packets.append("".join(curr))
                     curr, curr_len = [start], len(start)
                 curr.append(part)
