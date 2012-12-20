@@ -156,7 +156,7 @@ class CollectdClient(object):
 
         for metric, values in values_by_metric.iteritems():
             cumm_func = functions.get(metric, constants.DEFAULT_CUMM_FUNCTION)
-            summed_values[metric] = functions[metric](values)
+            summed_values[metric] = cumm_func(values)
         return summed_values
 
     def _send_values(self, values):
