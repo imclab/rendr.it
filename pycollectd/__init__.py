@@ -1,3 +1,16 @@
+"""
+pycollect implements `collectd`s binary protocol[1], using Tornado's `IOLoop`
+and `PeriodicCallback` classes.
+
+By default, metrics are `sum()`ed and passed to to configured `collectd`
+instance every 60 seconds. The summation function can be defined on a
+per-metric basis (see `CollectdClient.queue()` and
+`CollectdClient._summarize_queue()`), and the interval can be set on a
+per-client basis.
+
+[1] https://collectd.org/wiki/index.php/Binary_protocol
+"""
+
 import collections
 import functools
 import logging
@@ -18,7 +31,42 @@ __version__ = "{0}.{1}.{2}".format(*__version_info__)
 
 
 class CollectdClient(object):
+    """
+    Provides an  API for sending metrics to a `collectd` instance.
+
+    Basic example:
+        collectd = CollectdClient("collectd.example.com")
+        collectd.queue('summed_random', random.randrange(100))
+        collectd.queue('summed_random', random.randrange(100))
+        collectd.queue('summed_random', random.randrange(100))
+
+        def avg(values):
+            return sum(values)/float(len(values))
+
+        collectd.queue('avg_values', 1, avg)
+        collectd.queue('avg_values', 2, avg)
+        collectd.queue('avg_values', 3, avg)
+        
+        collectd.start()
+        ioloop.IOLoop.instance().start()
+        
+    """
+    
     def __init__(self, collectd_hostname, **kwargs):
+        """
+        Creates a `CollectdClient` for communicating with the `collectd`
+        endpoint at `collectd_hostname`.
+
+        Valid kwargs:
+            `collectd_port`
+            `hostname`
+            `plugin_name`
+            `plugin_instance`
+            `plugin_type`
+            `send_interval`
+            `io_loop`
+        """
+
         collectd_port = kwargs.pop("collectd_port", constants.DEFAULT_PORT)
         self.collectd_addr = (collectd_hostname, collectd_port)
         self.hostname = kwargs.pop("hostname", socket.getfqdn())
@@ -47,20 +95,55 @@ class CollectdClient(object):
             ))
 
     def queue(self, metric, value, cumm_func=None):
+        """
+        Records a metric to be summarized and sent to `collectd`.
+
+        The `cumm_func` argument should be a function that takes a sequence
+        of values, returning their summarized form -- if none is defined,
+        `sum()` will be used.
+
+        If you pass mutliple different `cumm_func`s for a single `metric`,
+        the most recent `cumm_func` will be used. E.g., calling:
+
+            collectd.queue('foo', 1, f1)
+            collectd.queue('foo', 2)
+            collectd.queue('bar', 3, f2)
+            collectd.queue('foo', 4, f3)
+
+        would resent in `f3` being used to summarize "foo" values, and `f2`
+        being used for summarizing "bar" values.
+
+        """
         self._queue.append((metric, value, cumm_func))
 
     def start(self):
+        """
+        Starts the periodic loop.
+        """
         self._timer.start()
 
     def stop(self):
+        """
+        Stops the periodic loop.
+        """
         self._timer.stop()
 
     def _process_queue(self):
+        """
+        Creates summaries of the metrics queued so far, and sends them to
+        `collectd`.
+
+        Called automatically by `self._timer` every `self.send_interval`
+        seconds.
+        """
         summed_values = self._summarize_queue()
         sent_values = self._send_values(summed_values)
         return sent_values
 
     def _summarize_queue(self):
+        """
+        Generates summaries of the queued metrics.
+        """
         values_by_metric = collections.defaultdict(list)
         summed_values = {}
         functions = {}
@@ -77,6 +160,11 @@ class CollectdClient(object):
         return summed_values
 
     def _send_values(self, values):
+        """
+        Sends the summarized values to the `collectd` instance.
+
+        Returns the number of packets sent successfully.
+        """
         values_sent = 0
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
         for packet in self._create_packets(values):
