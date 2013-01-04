@@ -85,7 +85,7 @@ class CollectdClient(object):
 
         self._timer = ioloop.PeriodicCallback(
             self._process_queue,
-            self.send_interval,
+            self.send_interval * 1000,
             self.io_loop
         )
 
