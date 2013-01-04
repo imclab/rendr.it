@@ -202,3 +202,9 @@ class CollectdClient(object):
                 curr_len += len(part)
             packets.append("".join(curr))
         return packets
+
+    # Predefined summarizing functions
+    @staticmethod
+    def AVERAGE(values):
+        return sum(values) / float(len(values))
+
