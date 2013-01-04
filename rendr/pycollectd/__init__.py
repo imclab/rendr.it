@@ -58,13 +58,14 @@ class CollectdClient(object):
         endpoint at `collectd_hostname`.
 
         Valid kwargs:
-            `collectd_port`
-            `hostname`
-            `plugin_name`
-            `plugin_instance`
-            `plugin_type`
-            `send_interval`
-            `io_loop`
+            `collectd_port`: The UDP port to talk to collectd on.
+            `hostname`: The hostname of this machine. Defaults to `socket.getfqdn()`
+            `plugin_name`: The name of the collectd-plugin we are reporting stats for. Defaults to "any".
+            `plugin_instance`: The instance of the plugin we are reporting stats for. Defaults to ""
+            `plugin_type`: The data-type for this plugin.
+            `send_interval`: Seconds between each data send.
+            `io_loop`: The tornado.ioloop.IOLoop instance to use. Defaults to
+                       `ioloop.IOLoop.instance()`
         """
 
         collectd_port = kwargs.pop("collectd_port", constants.DEFAULT_PORT)
@@ -110,7 +111,7 @@ class CollectdClient(object):
             collectd.queue('bar', 3, f2)
             collectd.queue('foo', 4, f3)
 
-        would resent in `f3` being used to summarize "foo" values, and `f2`
+        would result in `f3` being used to summarize "foo" values, and `f2`
         being used for summarizing "bar" values.
 
         """
