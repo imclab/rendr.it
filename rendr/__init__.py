@@ -343,7 +343,7 @@ class Renderer(tornado.web.RequestHandler):
                             <script>
                                 window.query = {{{data}}};
                                 window.decodeBase64UrlSafe = function (s) {
-                                    s = s.replace(/\+/g, '-').replace(/\//g, '_');
+                                    s = s.replace(/-/g, '+').replace(/_/g, '/');
                                     return decodeURIComponent(escape(atob(s)));
                                 };
                             </script>
