@@ -45,6 +45,7 @@ import tornado.template
 from tornado import gen
 from rendr import asyncs3
 from rendr import asyncprocess
+from rendr.pycollectd import CollectdClient
 
 
 ASSET_MANIFEST = {
@@ -489,10 +490,10 @@ class CollectdLoggingApplication(tornado.web.Application):
                 handlers, default_hosts, transforms, wsgi, **settings
         )
 
-        self._collectd = None
-        if self.settings.get("collectd_server"):
-            self._collectd_name = self.settings.get("collectd_name", "tornado")
-            collectd_server = self.settings['collectd_server']
+        self._collectd_loggers = {}
+        if settings.get("collectd_server"):
+            self._collectd_name = settings.get("collectd_name", "tornado")
+            collectd_server = settings['collectd_server']
             if ':' in collectd_server:
                 hostname, port = collectd_server.split(':')
                 self._connect_collectd(hostname, port)
@@ -500,20 +501,33 @@ class CollectdLoggingApplication(tornado.web.Application):
                 self._connect_collectd(collectd_server)
 
     def _connect_collectd(self, hostname, port=25826):
-        collectd.start_threads()
-        self._collectd = collectd.Connection(collectd_host=hostname,
-                collectd_port=port, plugin_name=self._collectd_name)
+        for logger_name in [
+                "rendrit_request",
+                "rendrit_processing_time",
+                "rendrit_error_rate"
+            ]:
+            collectd_logger = CollectdClient(
+                    hostname,
+                    collectd_port=port,
+                    plugin_name=logger_name
+            )
+            collectd_logger.start()
+            self._collectd_loggers[logger_name] = collectd_logger
 
     def log_request(self, handler):
         super(CollectdLoggingApplication, self).log_request(handler)
-        if self._collectd:
+        if self._collectd_loggers:
             handler_name = handler.__class__.__name__
             response_code = handler.get_status()
             request_time = handler.request.request_time() * 1000.0
 
-            log_data = {
-                "request_time": request_time,
-                reponse_code: 1
-            }
-            self._collectd.requests.record(handler_name, **log_data)
-
+            for metric in ['total', handler_name]:
+                self._collectd_loggers['rendrit_request'].queue(metric, 1)
+                self._collectd_loggers['rendrit_error_rate'].queue(
+                    metric + "_" + response_code, 1
+                )
+                self._collectd_loggers['rendrit_processing_time'].queue(
+                    metric,
+                    request_time,
+                    CollectdClient.AVERAGE
+                )
