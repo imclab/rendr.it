@@ -21,8 +21,8 @@ import time
 
 from tornado import ioloop
 
-import pycollectd.constants as constants
-import pycollectd.utils as utils
+import constants
+import utils
 
 __all__ = ["CollectdClient"]
 

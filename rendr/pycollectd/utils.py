@@ -5,7 +5,7 @@ Utility methods for CollectdClient
 import re
 import struct
 
-import pycollectd.constants as constants
+import constants as constants
 
 
 def sanitize(string):
