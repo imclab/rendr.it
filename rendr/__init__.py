@@ -522,9 +522,13 @@ class CollectdLoggingApplication(tornado.web.Application):
             request_time = handler.request.request_time()
 
             for metric in ['total', handler_name]:
-                self._collectd_loggers['rendrit_request'].queue(metric, 1)
+                self._collectd_loggers['rendrit_request'].queue(
+                    metric, 1,
+                    lambda values: sum(values) / 60.0
+                )
                 self._collectd_loggers['rendrit_error_rate'].queue(
-                    "%s_%s" % (metric, response_code), 1
+                    "%s_%s" % (metric, response_code), 1,
+                    lambda values: sum(values) / 60.0
                 )
                 self._collectd_loggers['rendrit_processing_time'].queue(
                     metric, request_time,
