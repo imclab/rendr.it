@@ -342,7 +342,13 @@ class Renderer(tornado.web.RequestHandler):
                     <html>
                         <head>
                             <style>{{{css}}}</style>
-                            <script>window.query = {{{data}}};</script>
+                            <script>
+                                window.query = {{{data}}};
+                                window.decodeBase64UrlSafe = function (s) {
+                                    s = s.replace(/-/g, '+').replace(/_/g, '/');
+                                    return decodeURIComponent(escape(atob(s)));
+                                };
+                            </script>
                         </head>
                         <body style="margin:0;padding:0;overflow:hidden">
                             {{{html}}}
