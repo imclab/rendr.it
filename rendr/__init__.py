@@ -524,7 +524,7 @@ class CollectdLoggingApplication(tornado.web.Application):
             for metric in ['total', handler_name]:
                 self._collectd_loggers['rendrit_request'].queue(metric, 1)
                 self._collectd_loggers['rendrit_error_rate'].queue(
-                    metric + "_" + response_code, 1
+                    "%s_%s" % (metric, response_code), 1
                 )
                 self._collectd_loggers['rendrit_processing_time'].queue(
                     metric,
