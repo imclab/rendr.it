@@ -519,7 +519,7 @@ class CollectdLoggingApplication(tornado.web.Application):
         if self._collectd_loggers:
             handler_name = handler.__class__.__name__
             response_code = handler.get_status()
-            request_time = handler.request.request_time() * 1000.0
+            request_time = handler.request.request_time()
 
             for metric in ['total', handler_name]:
                 self._collectd_loggers['rendrit_request'].queue(metric, 1)
