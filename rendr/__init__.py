@@ -32,7 +32,6 @@ import cssmin
 import urllib
 import hashlib
 import httplib
-import collectd
 import pystache
 import tempfile
 import datetime
