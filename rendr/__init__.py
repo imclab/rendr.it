@@ -44,8 +44,8 @@ import tornado.ioloop
 import tornado.template
 from tornado import gen
 from rendr import asyncs3
+from rendr import pycollectd
 from rendr import asyncprocess
-from rendr.pycollectd import CollectdClient
 
 
 ASSET_MANIFEST = {
@@ -506,7 +506,7 @@ class CollectdLoggingApplication(tornado.web.Application):
                 "rendrit_processing_time",
                 "rendrit_error_rate"
             ]:
-            collectd_logger = CollectdClient(
+            collectd_logger = pycollectd.CollectdClient(
                     hostname,
                     collectd_port=port,
                     plugin_name=logger_name
@@ -527,7 +527,6 @@ class CollectdLoggingApplication(tornado.web.Application):
                     "%s_%s" % (metric, response_code), 1
                 )
                 self._collectd_loggers['rendrit_processing_time'].queue(
-                    metric,
-                    request_time,
-                    CollectdClient.AVERAGE
+                    metric, request_time,
+                    pycollectd.CollectdClient.AVERAGE
                 )
