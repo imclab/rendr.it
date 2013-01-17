@@ -175,6 +175,9 @@ class CollectdClient(object):
         return values_sent
 
     def _generate_message_start(self, when=None):
+        """
+        Returns the collectd packet header
+        """
         return "".join([
             utils.pack(constants.TYPE_HOST, self.hostname),
             utils.pack(constants.TYPE_TIME, when or time.time()),
@@ -185,6 +188,9 @@ class CollectdClient(object):
         ])
 
     def _create_packets(self, counts, when=None):
+        """
+        Converts summarized counts into collectd UDP packets
+        """
         packets = []
         start = self._generate_message_start(when)
         parts = [utils.pack(name, count) for name, count in counts.items()]
@@ -206,5 +212,8 @@ class CollectdClient(object):
     # Predefined summarizing functions
     @staticmethod
     def average(values):
+        """
+        Returns the average of the provided values.
+        """
         return sum(values) / float(len(values))
 
