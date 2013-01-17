@@ -27,10 +27,10 @@ import utils
 __all__ = ["CollectdClient"]
 
 __version_info__ = (1, 0, 3, "devel", 0)
-__version__ = "{0}.{1}.{2}".format(*__version_info__)
+__version__ = "{0}.{1}.{2}".format(*__version_info__) # pylint: disable=W0142
 
 
-class CollectdClient(object):
+class CollectdClient(object): # pylint: disable=R0902
     """
     Provides an  API for sending metrics to a `collectd` instance.
 
