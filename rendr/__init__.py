@@ -498,6 +498,8 @@ class CollectdLoggingApplication(tornado.web.Application):
         self._collectd_loggers = {}
         if settings.get("collectd_server"):
             self._collectd_name = settings.get("collectd_name", "tornado")
+            self.send_interval = settings.get("send_interval",
+                pycollectd.constants.DEFAULT_SEND_INTERVAL)
             collectd_server = settings['collectd_server']
             if ':' in collectd_server:
                 hostname, port = collectd_server.split(':')
@@ -514,7 +516,8 @@ class CollectdLoggingApplication(tornado.web.Application):
             collectd_logger = pycollectd.CollectdClient(
                     hostname,
                     collectd_port=port,
-                    plugin_name=logger_name
+                    plugin_name=logger_name,
+                    send_interval=self.send_interval
             )
             collectd_logger.start()
             self._collectd_loggers[logger_name] = collectd_logger
@@ -529,11 +532,11 @@ class CollectdLoggingApplication(tornado.web.Application):
             for metric in ['total', handler_name]:
                 self._collectd_loggers['rendrit_request'].queue(
                     metric, 1,
-                    lambda values: sum(values) / 60.0
+                    lambda values: sum(values) / float(self.send_interval)
                 )
                 self._collectd_loggers['rendrit_error_rate'].queue(
                     "%s_%s" % (metric, response_code), 1,
-                    lambda values: sum(values) / 60.0
+                    lambda values: sum(values) / float(self.send_interval)
                 )
                 self._collectd_loggers['rendrit_processing_time'].queue(
                     metric, request_time,
