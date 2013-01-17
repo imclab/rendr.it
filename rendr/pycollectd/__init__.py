@@ -205,6 +205,6 @@ class CollectdClient(object):
 
     # Predefined summarizing functions
     @staticmethod
-    def AVERAGE(values):
+    def average(values):
         return sum(values) / float(len(values))
 

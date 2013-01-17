@@ -537,5 +537,5 @@ class CollectdLoggingApplication(tornado.web.Application):
                 )
                 self._collectd_loggers['rendrit_processing_time'].queue(
                     metric, request_time,
-                    pycollectd.CollectdClient.AVERAGE
+                    pycollectd.CollectdClient.average
                 )
