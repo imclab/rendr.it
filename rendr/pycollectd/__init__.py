@@ -46,12 +46,12 @@ class CollectdClient(object): # pylint: disable=R0902
         collectd.queue('avg_values', 1, avg)
         collectd.queue('avg_values', 2, avg)
         collectd.queue('avg_values', 3, avg)
-        
+
         collectd.start()
         ioloop.IOLoop.instance().start()
-        
+
     """
-    
+
     def __init__(self, collectd_hostname, **kwargs):
         """
         Creates a `CollectdClient` for communicating with the `collectd`
@@ -217,3 +217,88 @@ class CollectdClient(object): # pylint: disable=R0902
         """
         return sum(values) / float(len(values))
 
+if __name__ == "__main__":
+    import string
+    import unittest
+
+    class PyCollectdClientTest(unittest.TestCase):
+        def setUp(self):
+            self.client = CollectdClient("localhost", hostname="hostname")
+
+        def test_header(self):
+            expected = "".join(chr(x) for x in [
+                0x00, 0x00, 0x00, 0x0d, 0x68, 0x6f, 0x73, 0x74,
+                0x6e, 0x61, 0x6d, 0x65, 0x00, 0x00, 0x01, 0x00,
+                0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x01, 0x00, 0x02, 0x00, 0x08, 0x61, 0x6e, 0x79,
+                0x00, 0x00, 0x03, 0x00, 0x05, 0x00, 0x00, 0x04,
+                0x00, 0x0a, 0x67, 0x61, 0x75, 0x67, 0x65, 0x00,
+                0x00, 0x07, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x3c
+            ])
+
+            header = self.client._generate_message_start(1)
+            self.assertEqual(header, expected)
+
+        def test_sanitize(self):
+            self.assertEqual(utils.sanitize(string.ascii_letters), string.ascii_letters)
+            self.assertEqual(utils.sanitize(string.digits), string.digits)
+            self.assertEqual(utils.sanitize("`~!@#$%^&*()-_=+[{]};:'\",<.>/? "), "")
+            self.assertEqual(utils.sanitize("~~this~~is~~a~~test~~string~~"), "this_is_a_test_string")
+
+
+        def test_pack_numeric(self):
+            self.assertEqual(utils.pack_numeric(constants.TYPE_TIME, -1),
+                "".join(chr(x) for x in [
+                    0x00, 0x01, 0x00, 0x0c, 0xff, 0xff, 0xff, 0xff,
+                    0xff, 0xff, 0xff, 0xff
+                ]))
+            self.assertEqual(utils.pack_numeric(constants.TYPE_TIME, 1),
+                "".join(chr(x) for x in [
+                    0x00, 0x01, 0x00, 0x0c, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x01
+                ]))
+
+        def test_pack_string(self):
+            self.assertEqual(utils.pack_string(constants.TYPE_HOST, "hostname"),
+                    "".join(chr(x) for x in [
+                        0x00, 0x00, 0x00, 0x0d, 0x68, 0x6f, 0x73, 0x74,
+                        0x6e, 0x61, 0x6d, 0x65, 0x00
+                ]))
+            self.assertEqual(utils.pack_string(constants.TYPE_PLUGIN, "plugin"),
+                    "".join(chr(x) for x in [
+                        0x00, 0x02, 0x00, 0x0b, 0x70, 0x6c, 0x75, 0x67,
+                        0x69, 0x6e, 0x00
+                ]))
+
+        def test_pack_value(self):
+            self.assertEqual(utils.pack_value("value", 1),
+                    "".join(chr(x) for x in [
+                        0x00, 0x05, 0x00, 0x0a, 0x76, 0x61, 0x6c, 0x75,
+                        0x65, 0x00, 0x00, 0x06, 0x00, 0x0f, 0x00, 0x01,
+                        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0,
+                        0x3f
+                ]))
+            self.assertEqual(utils.pack_value("value", -1),
+                    "".join(chr(x) for x in [
+                        0x00, 0x05, 0x00, 0x0a, 0x76, 0x61, 0x6c, 0x75,
+                        0x65, 0x00, 0x00, 0x06, 0x00, 0x0f, 0x00, 0x01,
+                        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0,
+                        0xbf
+                ]))
+            self.assertEqual(utils.pack_value("value", 0),
+                    "".join(chr(x) for x in [
+                        0x00, 0x05, 0x00, 0x0a, 0x76, 0x61, 0x6c, 0x75,
+                        0x65, 0x00, 0x00, 0x06, 0x00, 0x0f, 0x00, 0x01,
+                        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00
+                ]))
+            self.assertEqual(utils.pack_value("value", 12345),
+                    "".join(chr(x) for x in [
+                        0x00, 0x05, 0x00, 0x0a, 0x76, 0x61, 0x6c, 0x75,
+                        0x65, 0x00, 0x00, 0x06, 0x00, 0x0f, 0x00, 0x01,
+                        0x01, 0x00, 0x00, 0x00, 0x00, 0x80, 0x1c, 0xc8,
+                        0x40
+                ]))
+
+    unittest.main()
