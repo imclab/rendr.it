@@ -71,12 +71,18 @@ DEFAULT_CUMM_FUNCTION = sum
 #
 
 
-def sanitize(string):
+def sanitize(name):
     """Sanitizes a metric name."""
-    return re.sub(r"[^a-zA-Z0-9]+", "_", string).strip("_")
+    return re.sub(r"[^a-zA-Z0-9]+", "_", name).strip("_")
 
 
 def count_to_value_part(name, count, value_type='GAUGE'):
+    """
+    Converts a metric name and value into 2 collectd packet parts:
+        * a type instance part, setting the metric name as the type instance
+          name for subsequent values
+        * a value part containing a single value: the provided count
+    """
     data_type, pack_format = VALUE_TYPE[value_type]
     count_value = struct.pack(pack_format, count)
     return ''.join([
@@ -90,6 +96,8 @@ def count_to_value_part(name, count, value_type='GAUGE'):
 
 
 def part_type_to_data_type(part_type):
+    """Returns the appropriate data type -- either numeric or string -- for a
+    collectd part type"""
     if part_type in (
             PART_TYPE['TIME'], PART_TYPE['TIME_HR'],
             PART_TYPE['INTERVAL'], PART_TYPE['INTERVAL_HR']):
@@ -106,6 +114,7 @@ def part_type_to_data_type(part_type):
 
 
 def value_to_part(part_type, value):
+    """Returns a collectd packet part for the provided value"""
     # part_type(2), length(2), payload
     data_type = part_type_to_data_type(part_type)
     if data_type == 'numeric':
@@ -273,6 +282,9 @@ class CollectdClient(object):  # pylint: disable=R0902
         return values_sent
 
     def counts_to_packets(self, counts, timestamp=None):
+        """
+        Given a dict of { metric: value }, yields collectd UDP packets
+        """
         packet = self.head_part(timestamp)
         for name, count in counts.iteritems():
             count_part = count_to_value_part(name, count)
@@ -283,6 +295,11 @@ class CollectdClient(object):  # pylint: disable=R0902
         yield packet
 
     def head_part(self, timestamp=None):
+        """
+        Returns a sequence of parts to use as a header for a collectd packet.
+
+        These header parts provide the context for any subsequent value parts.
+        """
         timestamp = timestamp or time.time()
 
         return ''.join([
