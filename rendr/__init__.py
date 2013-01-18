@@ -499,7 +499,7 @@ class CollectdLoggingApplication(tornado.web.Application):
         if settings.get("collectd_server"):
             self._collectd_name = settings.get("collectd_name", "tornado")
             self.send_interval = settings.get("send_interval",
-                pycollectd.constants.DEFAULT_SEND_INTERVAL)
+                pycollectd.DEFAULT_SEND_INTERVAL)
             collectd_server = settings['collectd_server']
             if ':' in collectd_server:
                 hostname, port = collectd_server.split(':')
