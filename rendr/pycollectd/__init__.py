@@ -65,19 +65,29 @@ DEFAULT_SEND_INTERVAL = 60  # seconds
 DEFAULT_PORT = 25826
 DEFAULT_CUMM_FUNCTION = sum
 
+
+#
 # Utility Functions
+#
+
 
 def sanitize(string):
     """Sanitizes a metric name."""
     return re.sub(r"[^a-zA-Z0-9]+", "_", string).strip("_")
+
 
 def count_to_value_part(name, count, value_type='GAUGE'):
     data_type, pack_format = VALUE_TYPE[value_type]
     count_value = struct.pack(pack_format, count)
     return ''.join([
         value_to_part(PART_TYPE['TYPE_INSTANCE'], name),
-        struct.pack('>HHHB', PART_TYPE['VALUES'], len(count_value) + 7, 1, data_type), count_value
+        struct.pack(
+            '>HHHB',
+            PART_TYPE['VALUES'], len(count_value) + 7, 1, data_type
+        ),
+        count_value
     ])
+
 
 def part_type_to_data_type(part_type):
     if part_type in (
@@ -90,7 +100,10 @@ def part_type_to_data_type(part_type):
             PART_TYPE['TYPE_INSTANCE']):
         return 'string'
     else:
-        raise PycollectdException("Unknown or unimplemented part_type {}".format(part_type))
+        raise PycollectdException(
+                "Unknown or unimplemented part_type {}".format(part_type)
+        )
+
 
 def value_to_part(part_type, value):
     # part_type(2), length(2), payload
@@ -102,12 +115,17 @@ def value_to_part(part_type, value):
     else:
         raise PycollectdException("Invalid data_type {}".format(data_type))
 
+
+#
 # Classes
+#
+
 
 class PycollectdException(Exception):
     pass
 
-class CollectdClient(object): # pylint: disable=R0902
+
+class CollectdClient(object):  # pylint: disable=R0902
     """
     Provides an  API for sending metrics to a `collectd` instance.
 
@@ -135,14 +153,17 @@ class CollectdClient(object): # pylint: disable=R0902
         endpoint at `collectd_hostname`.
 
         Valid kwargs:
-            `collectd_port`: The UDP port to talk to collectd on.
-            `hostname`: The hostname of this machine. Defaults to `socket.getfqdn()`
-            `plugin_name`: The name of the collectd-plugin we are reporting stats for. Defaults to "any".
-            `plugin_instance`: The instance of the plugin we are reporting stats for. Defaults to ""
-            `plugin_type`: The data-type for this plugin.
-            `send_interval`: Seconds between each data send.
-            `io_loop`: The tornado.ioloop.IOLoop instance to use. Defaults to
-                       `ioloop.IOLoop.instance()`
+            * `collectd_port`: The UDP port to talk to collectd on.
+            * `hostname`: The hostname of this machine. Defaults to
+                `socket.getfqdn()`
+            * `plugin_name`: The name of the collectd-plugin we are reporting
+                stats for. Defaults to "any".
+            * `plugin_instance`: The instance of the plugin we are reporting
+                stats for. Defaults to ""
+            * `plugin_type`: The data-type for this plugin.
+            * `send_interval`: Seconds between each data send.
+            * `io_loop`: The tornado.ioloop.IOLoop instance to use. Defaults to
+                `ioloop.IOLoop.instance()`
         """
 
         collectd_port = kwargs.pop("collectd_port", DEFAULT_PORT)
@@ -305,11 +326,15 @@ if __name__ == "__main__":
             self.assertEqual(header, expected)
 
         def test_sanitize(self):
-            self.assertEqual(sanitize(string.ascii_letters), string.ascii_letters)
+            self.assertEqual(
+                    sanitize(string.ascii_letters), string.ascii_letters
+            )
             self.assertEqual(sanitize(string.digits), string.digits)
             self.assertEqual(sanitize("`~!@#$%^&*()-_=+[{]};:'\",<.>/? "), "")
-            self.assertEqual(sanitize("~~this~~is~~a~~test~~string~~"), "this_is_a_test_string")
-
+            self.assertEqual(
+                    sanitize("~~this~~is~~a~~test~~string~~"),
+                    "this_is_a_test_string"
+            )
 
         def test_pack_numeric(self):
             self.assertEqual(value_to_part(PART_TYPE['TIME'], -1),
