@@ -12,7 +12,6 @@ per-client basis.
 """
 
 import collections
-import errno
 import functools
 import logging
 import re
@@ -276,17 +275,10 @@ class CollectdClient(object):  # pylint: disable=R0902
         """
         values_sent = 0
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
-        sock.setblocking(False)
         for packet in self.counts_to_packets(values):
-            try:
-                bytes_tx = sock.sendto(packet, self.collectd_addr)
-                if len(packet) == bytes_tx:
-                    values_sent += 1
-            except socket.error as e:
-                if e.args[0] in (errno.EAGAIN, errno.EWOULDBLOCK):
-                    pass
-                else:
-                    raise
+            bytes_tx = sock.sendto(packet, self.collectd_addr)
+            if len(packet) == bytes_tx:
+                values_sent += 1
 
         sock.sock_close()
         return values_sent
