@@ -12,8 +12,6 @@ per-client basis.
 """
 
 import collections
-import functools
-import logging
 import re
 import socket
 import struct
