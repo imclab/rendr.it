@@ -280,7 +280,7 @@ class CollectdClient(object):  # pylint: disable=R0902
             if len(packet) == bytes_tx:
                 values_sent += 1
 
-        sock.sock_close()
+        sock.close()
         return values_sent
 
     def counts_to_packets(self, counts, timestamp=None):
