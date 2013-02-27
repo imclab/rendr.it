@@ -242,13 +242,6 @@ class Renderer(tornado.web.RequestHandler):
 
         log.debug("%s %s" % (library_id, rendr_id))
 
-        # Check recency of last total failure -- if less than timeout * 10,
-        # throw an error immediately. This prevents infinite rendr loops,
-        # provided there are fewer than 8 or so rendrs in the loop.
-        if t - Renderer._rendr_failure_times.get((library_id, rendr_id), 0) \
-                < self.timeout * 10:
-            raise tornado.web.HTTPError(503)
-
         # Assemble parameter set
         data = dict((k, v if len(v) != 1 else v[0])
                 for k, v in self.request.arguments.iteritems())
@@ -257,6 +250,13 @@ class Renderer(tornado.web.RequestHandler):
         format = format.lower()
 
         if format in ("jpg", "gif", "png"):
+            # Check recency of last total failure -- if less than timeout * 10,
+            # throw an error immediately. This prevents infinite rendr loops,
+            # provided there are fewer than 8 or so rendrs in the loop.
+            if t - Renderer._rendr_failure_times.get((library_id, rendr_id), 0) \
+                    < self.timeout * 10:
+                raise tornado.web.HTTPError(503)
+
             query_uri = "http://127.0.0.1:%s/%s/%s.html%s" % (self.port,
                 library_id, rendr_desc,
                 "?" + self.request.query if self.request.query else "")
