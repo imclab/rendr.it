@@ -441,8 +441,8 @@ SOFTWARE.
                     $("#new-library .initial").hide();
 
                     if (result.status == "success") {
-                        $("#new-library .library-id").text(rendr.viewState.library.libraryId);
-                        $("#new-library .secret-key").text(rendr.viewState.library.key);
+                        $("#new-library .library-id").val(rendr.viewState.library.libraryId);
+                        $("#new-library .secret-key").val(rendr.viewState.library.key);
 
                         $("#new-library .success").show();
                     } else {
