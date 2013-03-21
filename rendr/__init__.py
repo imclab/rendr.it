@@ -43,6 +43,7 @@ import tornado.ioloop
 import tornado.template
 from tornado import gen
 from rendr import asyncs3
+from rendr import pycollectd
 from rendr import asyncprocess
 
 
@@ -480,3 +481,64 @@ class StaticFile(tornado.web.StaticFileHandler):
         self.set_header("Vary", "Accept-Encoding")
         self.set_header("Cache-Control", "public, max-age=" +
             str(StaticBuild._cache_time))
+
+
+class CollectdLoggingApplication(tornado.web.Application):
+    """
+    Overrides `log_request` to push request information (timing, handler, etc.)
+    to a specified collectd instance.
+    """
+
+    def __init__(self, handlers=None, default_hosts="", transforms=None,
+            wsgi=False, **settings):
+        super(CollectdLoggingApplication, self).__init__(
+                handlers, default_hosts, transforms, wsgi, **settings
+        )
+
+        self._collectd_loggers = {}
+        if settings.get("collectd_server"):
+            self._collectd_name = settings.get("collectd_name", "tornado")
+            self.send_interval = settings.get("send_interval",
+                pycollectd.DEFAULT_SEND_INTERVAL)
+            collectd_server = settings['collectd_server']
+            if ':' in collectd_server:
+                hostname, port = collectd_server.split(':')
+                self._connect_collectd(hostname, port)
+            else:
+                self._connect_collectd(collectd_server)
+
+    def _connect_collectd(self, hostname, port=25826):
+        for logger_name in [
+                "rendrit_request",
+                "rendrit_processing_time",
+                "rendrit_error_rate"
+            ]:
+            collectd_logger = pycollectd.CollectdClient(
+                    hostname,
+                    collectd_port=port,
+                    plugin_name=logger_name,
+                    send_interval=self.send_interval
+            )
+            collectd_logger.start()
+            self._collectd_loggers[logger_name] = collectd_logger
+
+    def log_request(self, handler):
+        super(CollectdLoggingApplication, self).log_request(handler)
+        if self._collectd_loggers:
+            handler_name = handler.__class__.__name__
+            response_code = handler.get_status()
+            request_time = handler.request.request_time()
+
+            for metric in ['total', handler_name]:
+                self._collectd_loggers['rendrit_request'].queue(
+                    metric, 1,
+                    lambda values: sum(values) / float(self.send_interval)
+                )
+                self._collectd_loggers['rendrit_error_rate'].queue(
+                    "%s_%s" % (metric, response_code), 1,
+                    lambda values: sum(values) / float(self.send_interval)
+                )
+                self._collectd_loggers['rendrit_processing_time'].queue(
+                    metric, request_time,
+                    pycollectd.CollectdClient.average
+                )
