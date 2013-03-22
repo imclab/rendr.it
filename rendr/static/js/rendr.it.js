@@ -381,6 +381,9 @@ SOFTWARE.
                         $(".libraryId").text(rendr.viewState.rendr.libraryId);
                         $(".rendrId").text(rendr.viewState.rendr.rendrId);
 
+                        // Update title
+                        $("#rendr-title span").text(rendr.viewState.rendr.rendrId);
+
                         rendr.codeChange();
                     } else {
                         $("#load-rendr-error").reveal();
@@ -483,6 +486,9 @@ SOFTWARE.
                         // Set example URL
                         $(".libraryId").text(rendr.viewState.library.libraryId);
                         $(".rendrId").text(rendrId);
+
+                        // Update title
+                        $("#rendr-title span").text(rendr.viewState.rendr.rendrId);
 
                         rendr.codeChange();
 
