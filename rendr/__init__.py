@@ -182,7 +182,9 @@ class RendrManager(tornado.web.RequestHandler):
                 "rendrId": rendr_id,
                 "libraryId": library_id,
                 "css": req["css"],
-                "body": req["body"]
+                "body": req["body"],
+                "testPath": req["testPath"],
+                "testParams": req["testParams"]
             }
         )
 

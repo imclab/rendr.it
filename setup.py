@@ -9,9 +9,9 @@ setup(
         'static/css/*.css', 'static/font/*', 'static/img/*',
         'static/js/ace/*.js', 'static/js/*.js', 'static/robots.txt',
         'static/favicon.ico']},
-    install_requires=['tornado>=2.1', 'pystache', 'slimit==dev', 'cssmin',
+    install_requires=['tornado>=2.1', 'pystache', 'slimit', 'cssmin',
         "passlib", "pil>=1.1.7"],
-    dependency_links=['git+https://github.com/rspivak/slimit.git#egg=slimit-dev'],
+    dependency_links=['https://github.com/rspivak/slimit/tarball/master#egg=slimit-0.7.4'],
 
     # meta
     author='TaguchiMarketing Pty Ltd',

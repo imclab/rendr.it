@@ -308,14 +308,16 @@ SOFTWARE.
             });
         },
 
-        saveRendr: function(rendrId, css, html, callback) {
+        saveRendr: function(rendrId, css, html, testPath, testParams, callback) {
             $.ajax({
                 url: "/rendr/" + rendr.viewState.library.libraryId + "/" + rendrId,
                 type: "PUT",
                 data: JSON.stringify({
                     libraryKey: rendr.viewState.library.key,
                     css: css,
-                    body: html
+                    body: html,
+                    testPath: testPath,
+                    testParams: testParams
                 }),
                 dataType: "json",
                 success: function(response) {
@@ -349,6 +351,8 @@ SOFTWARE.
                 rendr.viewState.rendr.rendrId,
                 rendr.cssEditor.getSession().getValue(),
                 rendr.htmlEditor.getSession().getValue(),
+                $(".paramString").text(),
+                $(".queryString").text(),
                 function(result) {
                     $(btn).removeClass("in-progress");
                     if (result.status != "success") {
@@ -367,22 +371,29 @@ SOFTWARE.
 
             rendr.loadRendr(
                 $(btn).text(),
-
                 function(result) {
                     $(btn).parent().removeClass("disabled in-progress");
 
                     if (result.status == "success") {
-                        rendr.cssEditor.getSession().setValue(rendr.viewState.rendr.css);
+                        var r = rendr.viewState.rendr;
+                        rendr.cssEditor.getSession().setValue(r.css);
                         rendr.cssEditor.setReadOnly(false);
-                        rendr.htmlEditor.getSession().setValue(rendr.viewState.rendr.body);
+                        rendr.htmlEditor.getSession().setValue(r.body);
                         rendr.htmlEditor.setReadOnly(false);
 
                         // Set example URL here
-                        $(".libraryId").text(rendr.viewState.rendr.libraryId);
-                        $(".rendrId").text(rendr.viewState.rendr.rendrId);
+                        $(".libraryId").text(r.libraryId);
+                        $(".rendrId").text(r.rendrId);
+
+                        // Set query string to saved value
+                        $(".paramString").text(r.testPath || "")
+                            .trigger(r.testPath ? "hastext" : "notext");
+
+                        $(".queryString").text(r.testParams || "")
+                            .trigger(r.testParams ? "hastext" : "notext");
 
                         // Update title
-                        $("#rendr-title span").text(rendr.viewState.rendr.rendrId);
+                        $("#rendr-title span").text(r.rendrId);
 
                         rendr.codeChange();
                     } else {
@@ -472,23 +483,28 @@ SOFTWARE.
             }
 
             rendr.saveRendr(
-                rendrId, css, html,
+                rendrId, css, html, $(".paramString").text(),
+                $(".queryString").text(),
                 function(result) {
                     $(btn).removeClass("disabled in-progress");
                     $("#new-rendr .initial").hide();
 
                     if (result.status == "success") {
-                        rendr.cssEditor.getSession().setValue(rendr.viewState.rendr.css);
+                        rendr.cssEditor.getSession().setValue(
+                            rendr.viewState.rendr.css);
                         rendr.cssEditor.setReadOnly(false);
-                        rendr.htmlEditor.getSession().setValue(rendr.viewState.rendr.body);
+                        rendr.htmlEditor.getSession().setValue(
+                            rendr.viewState.rendr.body);
                         rendr.htmlEditor.setReadOnly(false);
 
                         // Set example URL
-                        $(".libraryId").text(rendr.viewState.library.libraryId);
+                        $(".libraryId").text(
+                            rendr.viewState.library.libraryId);
                         $(".rendrId").text(rendrId);
 
                         // Update title
-                        $("#rendr-title span").text(rendr.viewState.rendr.rendrId);
+                        $("#rendr-title span").text(
+                            rendr.viewState.rendr.rendrId);
 
                         rendr.codeChange();
 
