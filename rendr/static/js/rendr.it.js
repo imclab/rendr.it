@@ -182,6 +182,7 @@ SOFTWARE.
         // Synchronise the library menu with the current library
         updateLibraryMenu: function() {
             $("#library-menu ul").empty();
+            $("#rendr-title span").text(r.templateId);
             if (rendr.viewState.library) {
                 $("#library-menu").removeClass("disabled");
                 $(".library-name").text(rendr.viewState.library.name);
