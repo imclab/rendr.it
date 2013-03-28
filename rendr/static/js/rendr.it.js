@@ -182,7 +182,8 @@ SOFTWARE.
         // Synchronise the library menu with the current library
         updateLibraryMenu: function() {
             $("#library-menu ul").empty();
-            $("#rendr-title span").text(r.templateId);
+            $("#rendr-title span").text(
+                (rendr.viewState.template || {}).templateId || "");
             if (rendr.viewState.library) {
                 $("#library-menu").removeClass("disabled");
                 $(".library-name").text(rendr.viewState.library.name);
@@ -283,6 +284,9 @@ SOFTWARE.
                 data: {name: libraryName},
                 success: function(response) {
                     rendr.viewState.library = response;
+                    // Ensure library.rendrs is an array
+                    rendr.viewState.library.rendrs =
+                        rendr.viewState.library.rendrs || [];
                     callback({status: "success"});
                 },
                 error: function(response) {
@@ -300,6 +304,9 @@ SOFTWARE.
                     rendr.viewState.library = response;
                     // library key isn't returned by the get library RPC
                     rendr.viewState.library.key = libraryKey;
+                    // Ensure library.rendrs is an array
+                    rendr.viewState.library.rendrs =
+                        rendr.viewState.library.rendrs || [];
                     callback({status: "success"});
                 },
                 error: function(response) {
@@ -488,7 +495,6 @@ SOFTWARE.
                 $(".queryString").text(),
                 function(result) {
                     $(btn).removeClass("disabled in-progress");
-                    $("#new-rendr .initial").hide();
 
                     if (result.status == "success") {
                         rendr.cssEditor.getSession().setValue(
@@ -514,6 +520,7 @@ SOFTWARE.
 
                         $("#new-rendr").trigger("reveal:close");
                     } else {
+                        $("#new-rendr .initial").hide();
                         $("#new-rendr .error").show();
                     }
                 }

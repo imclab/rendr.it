@@ -70,8 +70,12 @@ ASSET_MANIFEST = {
         "/static/js/ace/ace.js",
         "/static/js/ace/mode-css.js",
         "/static/js/ace/mode-javascript.js",
+        "/static/js/ace/mode-json.js",
+        "/static/js/ace/mode-markdown.js",
         "/static/js/ace/mode-html.js",
-        "/static/js/ace/theme-rendr.js",
+        "/static/js/ace/worker-javascript.js",
+        "/static/js/ace/theme-mimeformat.js",
+        "/static/js/ace/ext-searchbox.js",
         "/static/js/rendr.it.js"
     ]
 }
