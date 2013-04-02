@@ -990,9 +990,6 @@ header .button-group .button {
     border-color: #b4b4b4;
 }
 
-
-
-
 .button.ctl.dropdown > ul  {
     -webkit-border-bottom-left-radius: 3px;
     -webkit-border-bottom-right-radius: 3px;
@@ -1001,6 +998,9 @@ header .button-group .button {
     border-bottom-left-radius: 3px;
     border-bottom-right-radius: 3px;
     z-index: 1000;
+    max-height: 350px;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .button.ctl.dropdown {
