@@ -828,17 +828,17 @@ li.preview-bgcolour span.prefix {
 .preview-paper {
     background-color: #fefefe;
     background-image: -webkit-linear-gradient(#d6f0f9 2px, transparent 2px),
-        -webkit-linear-gradient(0, #d6f0f9 2px, transparent 2px),
+        -webkit-linear-gradient(90deg, #d6f0f9 2px, transparent 2px),
         -webkit-linear-gradient(#def7ff 1px, transparent 1px),
-        -webkit-linear-gradient(0, #def7ff 1px, transparent 1px);
+        -webkit-linear-gradient(90deg, #def7ff 1px, transparent 1px);
     background-image: -moz-linear-gradient(#d6f0f9 2px, transparent 2px),
-        -moz-linear-gradient(0, #d6f0f9 2px, transparent 2px),
+        -moz-linear-gradient(90deg, #d6f0f9 2px, transparent 2px),
         -moz-linear-gradient(#def7ff 1px, transparent 1px),
-        -moz-linear-gradient(0, #def7ff 1px, transparent 1px);
+        -moz-linear-gradient(90deg, #def7ff 1px, transparent 1px);
     background-image: linear-gradient(#d6f0f9 2px, transparent 2px),
-        linear-gradient(0, #d6f0f9 2px, transparent 2px),
+        linear-gradient(90deg, #d6f0f9 2px, transparent 2px),
         linear-gradient(#def7ff 1px, transparent 1px),
-        linear-gradient(0, #def7ff 1px, transparent 1px);
+        linear-gradient(90deg, #def7ff 1px, transparent 1px);
     background-size: 100px 100px, 100px 100px, 10px 10px, 10px 10px;
     background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
 }
@@ -846,17 +846,17 @@ li.preview-bgcolour span.prefix {
 .preview-blueprint {
     background-color: #269;
     background-image: -webkit-linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px),
-        -webkit-linear-gradient(0, rgba(255,255,255,.2) 1px, transparent 1px),
+        -webkit-linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px),
         -webkit-linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
-        -webkit-linear-gradient(0, rgba(255,255,255,.1) 1px, transparent 1px);
+        -webkit-linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
     background-image: -moz-linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px),
-        -moz-linear-gradient(0, rgba(255,255,255,.2) 1px, transparent 1px),
+        -moz-linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px),
         -moz-linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
-        -moz-linear-gradient(0, rgba(255,255,255,.1) 1px, transparent 1px);
+        -moz-linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
     background-image: linear-gradient(rgba(255,255,255,.2) 1px, transparent 1px),
-        linear-gradient(0, rgba(255,255,255,.2) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.2) 1px, transparent 1px),
         linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
-        linear-gradient(0, rgba(255,255,255,.1) 1px, transparent 1px);
+        linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
     background-size: 100px 100px, 100px 100px, 10px 10px, 10px 10px;
     background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
 }
