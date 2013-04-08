@@ -82,6 +82,13 @@ header #preview-ctl {
     vertical-align: top;
 }
 
+header #rendr-title {
+    display: inline-block;
+    font-size: 12px;
+    line-height: 40px;
+    margin-left: 10px;
+}
+
 #content {
     position: absolute;
     top: 40px;
@@ -296,6 +303,11 @@ THEMES - header and ace editor
     }
 }
 
+.theme-dark header #rendr-title {
+    color: #fff;
+    text-shadow: 0 -1px 0 #000;
+}
+
 .theme-dark .ace-rendr .ace_editor {
   border: 2px solid rgb(159, 159, 159);
 }
@@ -495,6 +507,11 @@ THEMES - header and ace editor
         background-image:         linear-gradient(rgba(0,0,0,0),rgba(0,0,0,0.16)), url(/static/img/bg-light_@2X.png?v=1);
         background-size: 310px 40px;
     }
+}
+
+.theme-light header #rendr-title {
+    color: rgba(0,0,0,0.8);
+    text-shadow: 0 1px 0 #fff;
 }
 
 .theme-light .ace-rendr .ace_editor {
