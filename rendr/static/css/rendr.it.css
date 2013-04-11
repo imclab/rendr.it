@@ -1168,6 +1168,10 @@ a.button.postfix {
     display: none !important;
 }
 
+#load-library .success .icon-ok-sign {
+    color: #71ca4c;
+}
+
 .tabs {
     border: none;
 }

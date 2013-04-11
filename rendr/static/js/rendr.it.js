@@ -442,7 +442,8 @@ SOFTWARE.
                 function(result) {
                     $(btn).removeClass("disabled in-progress");
                     if (result.status == "success") {
-                        $("#load-library").trigger("reveal:close");
+                        $("#load-library .initial").hide();
+                        $("#load-library .success").show();
                     } else {
                         $("#load-library .initial").hide();
                         $("#load-library .error").show();
