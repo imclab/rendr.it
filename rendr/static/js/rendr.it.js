@@ -1,5 +1,5 @@
 /*!
-Copyright (C) 2012 TaguchiMarketing Pty Ltd
+Copyright (C) 2012, 2013 TaguchiMarketing Pty Ltd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+// Initialize angularJS rendr.it module
+var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvider) {
+  // Modify the interpolation symbol so as not to clash with Mustache templates
+  // FIXME perhaps check if we can switch from Mustache to AngularJS
+  // for rendr url query string interpolation?
+  $interpolateProvider.startSymbol('((');
+  $interpolateProvider.endSymbol('))');
+});
+
 (function($) {
+
     // From http://stackoverflow.com/questions/985272/jquery-selecting-text-in-an-element-akin-to-highlighting-with-your-mouse/987376#987376
     function selectText(element) {
         var doc = document, range, selection;
@@ -55,672 +65,249 @@ SOFTWARE.
         }
     }
 
-    // Internal methods and state
-    var rendr = {
-        // State
-        viewState: {
-            library: null,
-            rendr: null,
-            theme: 'light',
-            previewMode: 'live'
-        },
-
-        // Convert a query string to a list of parameters
-        parseQuery: function(query) {
-            var params = {},
-                pairs = query.substring(1).split('&'), p, i;
-            for (i = 0; i < pairs.length; i++) {
-                p = pairs[i].split('=');
-                params[decodeURIComponent(p[0])] = decodeURIComponent(p[1]);
-            }
-            return params;
-        },
-        // Preview pane update options
-        localPreview: function(html, css, params, qs, callback) {
-            var startTs = new Date();
-
-            // Replace the iframe itself, because some types of CSS import
-            // kill load method.
-            $("#preview iframe").replaceWith(
-                "<iframe style='width:0;height:0'></iframe>");
-
-            // Use setTimeout as the iframe doesn't get a document until
-            // a little after it's added to the DOM
-            setTimeout(function() {
-                var $iframe = $("#preview iframe"),
-                    doc = $iframe.contents()[0], content,
-                    data = rendr.parseQuery("?" + qs);
-
-                data.params = (params || '').split('/');
-
-                content = Mustache.render(
-                    "<html><head><style>{{{css}}}</style>" +
-                    "<script>query = {{{query}}};window.decodeBase64UrlSafe" +
-                    " = function (s) { s = s.replace(/-/g, '+').replace(" +
-                    "/_/g, '/'); return decodeURIComponent(escape(atob(s " +
-                    "))); };</script></head>" +
-                    "<body style='margin:0;padding:0;overflow:hidden'>" +
-                    "{{{html}}}</body></html>", {
-                        css: Mustache.render(css, data),
-                        html: Mustache.render(html, data),
-                        query: JSON.stringify(data)
-                    }
-                );
-
-                $iframe.load(function() {
-                    var $body = $iframe.contents().find("html"),
-                        w = $body.width(),
-                        h = $body.height();
-
-                    $iframe.css({
-                        width: w + "px",
-                        height: h + "px",
-                        "margin-left": '-' + Math.round(w / 2) + "px",
-                        "margin-top": '-' + Math.round(h / 2) + "px"
-                    });
-
-                    $('#preview .status .width').text(w);
-                    $('#preview .status .height').text(h);
-                    $('#preview .status .filesize').text('?');
-                    $('#preview .status .rendertime').text("" +
-                        ((new Date()).valueOf() - startTs.valueOf()) / 1000.0);
-
-                    if (callback) {
-                        callback($iframe.contents());
-                    }
-                });
-
-                doc.open();
-                doc.write(content);
-                doc.close();
-            }, 1);
-        },
-        renderPreview: function(params, qs, format) {
-            var startTs = new Date();
-
-            // Replace the iframe itself, because some types of CSS import
-            // kill load method.
-            $("#preview iframe").replaceWith(
-                "<iframe style='width:0;height:0'></iframe>");
-
-            // Use setTimeout as the iframe doesn't get a document until
-            // a little after it's added to the DOM
-            setTimeout(function() {
-                var $iframe = $("#preview iframe"), content, url,
-                    doc = $iframe.contents()[0];
-
-                url = "/" + rendr.viewState.rendr.libraryId + "/" +
-                    rendr.viewState.rendr.rendrId + "/" + params + "." +
-                    format + "?" + qs;
-
-                $iframe.load(function() {
-                    var $body = $iframe.contents().find("html"),
-                        w = $body.width(),
-                        h = $body.height();
-
-                    $iframe.css({
-                        width: w + "px",
-                        height: h + "px",
-                        "margin-left": '-' + Math.round(w / 2) + "px",
-                        "margin-top": '-' + Math.round(h / 2) + "px"
-                    });
-
-                    $('#preview .status .width').text(w);
-                    $('#preview .status .height').text(h);
-                    $('#preview .status .filesize').text('?');
-                    $('#preview .status .rendertime').text("" +
-                        ((new Date()).valueOf() - startTs.valueOf()) / 1000.0);
-                });
-
-                doc.open();
-                doc.write("<html><head></head><body style='margin:0;pading:" +
-                    "0;overflow:hidden'><img src='" + url +
-                    "' style='display:block' /></body></html>");
-                doc.close();
-            }, 1);
-        },
-        // Synchronise the library menu with the current library
-        updateLibraryMenu: function() {
-            $("#library-menu ul").empty();
-            $("#rendr-title span").text(
-                (rendr.viewState.template || {}).templateId || "");
-            if (rendr.viewState.library) {
-                $("#library-menu").removeClass("disabled");
-                $(".library-name").text(rendr.viewState.library.name);
-                $(".btn-new-rendr").removeClass("disabled");
-                $(".btn-save-rendr").addClass("disabled");
-
-                $.each(rendr.viewState.library.rendrs || [], function(i, r) {
-                    $("#library-menu ul").append(
-                        $("<li><a href='#' class='action btn-load-rendr'></a></li>")
-                            .find("a").text(r).end());
-                });
-            } else {
-                $("#library-menu").addClass("disabled");
-                $(".library-name").text("(No library loaded)");
-                $(".btn-new-rendr").addClass("disabled");
-                $(".btn-save-rendr").addClass("disabled");
-            }
-        },
-        // Get the current code and redraw the preview -- installed as an ACE
-        // change callback.
-        codeChange: function() {
-            if (!rendr.viewState.rendr) {
-                return;
-            }
-
-            var currentHtml = rendr.htmlEditor.getSession().getValue(),
-                currentCss = rendr.cssEditor.getSession().getValue();
-
-            if (currentHtml != rendr.viewState.rendr.body ||
-                    currentCss != rendr.viewState.rendr.css) {
-                $(".btn-save-rendr").removeClass("disabled");
-                $(".btn-rendered-preview").addClass("disabled");
-
-                // switch to live mode, since the code has changed from the
-                // saved version
-                if (rendr.viewState.previewMode == 'rendered') {
-                    $(".btn-live-preview").addClass("active");
-                    $(".btn-rendered-preview").removeClass("active");
-
-                    rendr.viewState.previewMode = 'live';
-                }
-            } else {
-                $(".btn-save-rendr").addClass("disabled");
-                $(".btn-rendered-preview").removeClass("disabled");
-            }
-
-            if (rendr.viewState.previewMode == 'live') {
-                rendr.localPreview(currentHtml, currentCss,
-                    $(".paramString").text(), $(".queryString").text());
-            } else {
-                rendr.renderPreview($(".paramString").text(),
-                    $(".queryString").text(), 'png');
-            }
-        },
-        // Synchronise current option selections and relevant classes with
-        // the current options
-        syncOptions: function() {
-            var options = localStorage["options"];
-            if (!options) {
-                return;
-            } else {
-                options = JSON.parse(options);
-            }
-
-            // Sync all in one go
-            $.each(options, function(key, value) {
-                $("#options input[name=" + key + "]").each(function() {
-                    if ($(this).val() != value) {
-                        $(this).attr("checked", false);
-                    } else {
-                        $(this).attr("checked", true);
-                    }
-                });
-            });
-
-            // Update the CSS theme classes individually
-            if (options.theme) {
-                $("body").removeClass();
-                $("body").addClass(options.theme);
-            }
-            if (options.gridTheme) {
-                $("#preview").removeClass().css('background-color', '');
-                if (options.gridTheme.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
-                    $("#preview, #colour-swatch").css('background-color', options.gridTheme);
-                    $("#colour, #preview-bgcolour").val(options.gridTheme);
-                    $("#preview-bgcolour").attr("checked",true).closest('li').addClass('active');
-                } else {
-                    $("#preview").addClass("right_panel " + options.gridTheme);
-                }
-            }
-        },
-
-        // RPC wrappers
-        newLibrary: function(libraryName, callback) {
-            $.ajax({
-                url: "/library/",
-                type: "POST",
-                data: {name: libraryName},
-                success: function(response) {
-                    rendr.viewState.library = response;
-                    // Ensure library.rendrs is an array
-                    rendr.viewState.library.rendrs =
-                        rendr.viewState.library.rendrs || [];
-                    callback({status: "success"});
-                },
-                error: function(response) {
-                    rendr.viewState.library = null;
-                    callback({status: "error"});
-                }
-            });
-        },
-        loadLibrary: function(libraryId, libraryKey, callback) {
-            $.ajax({
-                url: "/library/" + libraryId,
-                type: "GET",
-                data: {key: libraryKey},
-                success: function(response) {
-                    rendr.viewState.library = response;
-                    // library key isn't returned by the get library RPC
-                    rendr.viewState.library.key = libraryKey;
-                    // Ensure library.rendrs is an array
-                    rendr.viewState.library.rendrs =
-                        rendr.viewState.library.rendrs || [];
-                    callback({status: "success"});
-                },
-                error: function(response) {
-                    rendr.viewState.library = null;
-                    callback({status: "error"});
-                }
-            });
-        },
-
-        saveRendr: function(rendrId, css, html, testPath, testParams, callback) {
-            $.ajax({
-                url: "/rendr/" + rendr.viewState.library.libraryId + "/" + rendrId,
-                type: "PUT",
-                data: JSON.stringify({
-                    libraryKey: rendr.viewState.library.key,
-                    css: css,
-                    body: html,
-                    testPath: testPath,
-                    testParams: testParams
-                }),
-                dataType: "json",
-                success: function(response) {
-                    rendr.viewState.rendr = response;
-                    callback({status: "success"});
-                },
-                error: function(response) {
-                    callback({status: "error"});
-                }
-            });
-        },
-        loadRendr: function(rendrId, callback) {
-            $.ajax({
-                url: "/" + rendr.viewState.library.libraryId + "/" + rendrId + ".json",
-                type: "GET",
-                success: function(response) {
-                    rendr.viewState.rendr = response;
-                    callback({status: "success"});
-                },
-                error: function(response) {
-                    callback({status: "error"});
-                }
-            });
-        },
-
-        // UI action methods
-        "btn-save-rendr": function(btn) {
-            $(btn).addClass("disabled in-progress");
-
-            rendr.saveRendr(
-                rendr.viewState.rendr.rendrId,
-                rendr.cssEditor.getSession().getValue(),
-                rendr.htmlEditor.getSession().getValue(),
-                $(".paramString").text(),
-                $(".queryString").text(),
-                function(result) {
-                    $(btn).removeClass("in-progress");
-                    if (result.status != "success") {
-                        $("#save-rendr-error").reveal();
-                    } else {
-                        rendr.codeChange();
-                    }
-                }
-            );
-        },
-        "btn-new-rendr": function(btn) {
-            $("#new-rendr").reveal();
-        },
-        "btn-load-rendr": function(btn) {
-            $(btn).parent().addClass("disabled in-progress");
-
-            rendr.loadRendr(
-                $(btn).text(),
-                function(result) {
-                    $(btn).parent().removeClass("disabled in-progress");
-
-                    if (result.status == "success") {
-                        var r = rendr.viewState.rendr;
-                        rendr.cssEditor.getSession().setValue(r.css);
-                        rendr.cssEditor.setReadOnly(false);
-                        rendr.htmlEditor.getSession().setValue(r.body);
-                        rendr.htmlEditor.setReadOnly(false);
-
-                        // Set example URL here
-                        $(".libraryId").text(r.libraryId);
-                        $(".rendrId").text(r.rendrId);
-
-                        // Set query string to saved value
-                        $(".paramString").text(r.testPath || "")
-                            .trigger(r.testPath ? "hastext" : "notext");
-
-                        $(".queryString").text(r.testParams || "")
-                            .trigger(r.testParams ? "hastext" : "notext");
-
-                        // Update title
-                        $("#rendr-title span").text(r.rendrId);
-
-                        rendr.codeChange();
-                    } else {
-                        $("#load-rendr-error").reveal();
-                    }
-                }
-            );
-        },
-
-        "btn-live-preview": function(btn) {
-            if (rendr.viewState.previewMode == "rendered") {
-                $(".btn-live-preview").addClass("active");
-                $(".btn-rendered-preview").removeClass("active");
-
-                rendr.viewState.previewMode = "live";
-
-                rendr.codeChange();
-            }
-        },
-        "btn-rendered-preview": function(btn) {
-            if (rendr.viewState.previewMode == "live") {
-                $(".btn-rendered-preview").addClass("active");
-                $(".btn-live-preview").removeClass("active");
-
-                rendr.viewState.previewMode = "rendered";
-
-                rendr.codeChange();
-            }
-        },
-
-        "btn-load-library-submit": function(btn) {
-            $(btn).addClass("disabled in-progress");
-
-            rendr.loadLibrary(
-                $("#load-library input[name=libraryId]").val(),
-                $("#load-library input[name=libraryKey]").val(),
-
-                function(result) {
-                    $(btn).removeClass("disabled in-progress");
-                    if (result.status == "success") {
-                        $("#load-library .initial").hide();
-                        $("#load-library .success").show();
-                    } else {
-                        $("#load-library .initial").hide();
-                        $("#load-library .error").show();
-                    }
-
-                    rendr.updateLibraryMenu();
-                }
-            )
-        },
-        "btn-new-library-submit": function(btn) {
-            $(btn).addClass("disabled in-progress");
-
-            rendr.newLibrary(
-                $("#new-library input[name=libraryName]").val(),
-
-                function(result) {
-                    $(btn).removeClass("disabled in-progress");
-                    $("#new-library .initial").hide();
-
-                    if (result.status == "success") {
-                        $("#new-library .library-id").val(rendr.viewState.library.libraryId);
-                        $("#new-library .secret-key").val(rendr.viewState.library.key);
-
-                        $("#new-library .success").show();
-                    } else {
-                        $("#new-library .error").show();
-                    }
-
-                    rendr.updateLibraryMenu();
-                }
-            );
-        },
-
-        "btn-new-rendr-submit": function(btn) {
-            var rendrId = $("#new-rendr input[name=rendrId]").val(),
-                html, css;
-
-            $(btn).addClass("disabled in-progress");
-
-            if ($("#new-rendr input[name=contentSource]:checked").val() == "current") {
-                css = rendr.cssEditor.getSession().getValue();
-                html = rendr.htmlEditor.getSession().getValue();
-            } else {
-                css = "/* Rendr " + rendrId + ": CSS content */";
-                html = "<!-- Rendr " + rendrId + ": HTML body content -->"
-            }
-
-            rendr.saveRendr(
-                rendrId, css, html, $(".paramString").text(),
-                $(".queryString").text(),
-                function(result) {
-                    $(btn).removeClass("disabled in-progress");
-
-                    if (result.status == "success") {
-                        rendr.cssEditor.getSession().setValue(
-                            rendr.viewState.rendr.css);
-                        rendr.cssEditor.setReadOnly(false);
-                        rendr.htmlEditor.getSession().setValue(
-                            rendr.viewState.rendr.body);
-                        rendr.htmlEditor.setReadOnly(false);
-
-                        // Set example URL
-                        $(".libraryId").text(
-                            rendr.viewState.library.libraryId);
-                        $(".rendrId").text(rendrId);
-
-                        // Update title
-                        $("#rendr-title span").text(
-                            rendr.viewState.rendr.rendrId);
-
-                        rendr.codeChange();
-
-                        rendr.viewState.library.rendrs.push(rendrId);
-                        rendr.updateLibraryMenu();
-
-                        $("#new-rendr").trigger("reveal:close");
-                    } else {
-                        $("#new-rendr .initial").hide();
-                        $("#new-rendr .error").show();
-                    }
-                }
-            );
-        },
-
-        "btn-options-submit": function(btn) {
-            localStorage["options"] = JSON.stringify({
-                theme: $("#options input[name=theme]:checked").val(),
-                gridTheme: $("#options input[name=gridTheme]:checked").val()
-            });
-            rendr.syncOptions();
-
-            $("#options").trigger("reveal:close");
-        }
-    };
-    window.rendr = rendr;
-
-    // DOM/browser interfaces, event handlers, setup code
-
-    // Layout elements get set up when document is ready, to minimize redraws
-    $(document).ready(function () {
-        /*
-        CSS Browser Selector v0.4.0 (Nov 02, 2010)
-        Rafael Lima (http://rafael.adm.br)
-        http://rafael.adm.br/css_browser_selector
-        License: http://creativecommons.org/licenses/by/2.5/
-        Contributors: http://rafael.adm.br/css_browser_selector#contributors
-        */
-        function css_browser_selector(u) {
-            var ua = u.toLowerCase(),
-                is = function(t) {
-                    return ua.indexOf(t) > -1
-                }, g = 'gecko',
-                w = 'webkit',
-                s = 'safari',
-                o = 'opera',
-                m = 'mobile',
-                h = document.documentElement,
-                b = [(!(/opera|webtv/i.test(ua)) && /msie\s(\d)/.test(ua)) ? ('ie ie' + RegExp.$1) : is('firefox/2') ? g + ' ff2' : is('firefox/3.5') ? g + ' ff3 ff3_5' : is('firefox/3.6') ? g + ' ff3 ff3_6' : is('firefox/3') ? g + ' ff3' : is('firefox/') ? g + ' ff' + (/firefox\/(\d)/.test(ua) ? RegExp.$1 : '') : is('gecko/') ? g : is('opera') ? o + (/version\/(\d+)/.test(ua) ? ' ' + o + RegExp.$1 : (/opera(\s|\/)(\d+)/.test(ua) ? ' ' + o + RegExp.$2 : '')) : is('konqueror') ? 'konqueror' : is('blackberry') ? m + ' blackberry' : is('android') ? m + ' android' : is('chrome') ? w + ' chrome' : is('iron') ? w + ' iron' : is('applewebkit/') ? w + ' ' + s + (/version\/(\d+)/.test(ua) ? ' ' + s + RegExp.$1 : '') : is('mozilla/') ? g : '', is('j2me') ? m + ' j2me' : is('iphone') ? m + ' iphone' : is('ipod') ? m + ' ipod' : is('ipad') ? m + ' ipad' : is('mac') ? 'mac' : is('darwin') ? 'mac' : is('webtv') ? 'webtv' : is('win') ? 'win' + (is('windows nt 6.0') ? ' vista' : '') : is('freebsd') ? 'freebsd' : (is('x11') || is('linux')) ? 'linux' : '', 'js'];
-            var c = b.join(' ');
-            h.className += ' ' + c;
-            return c
-        }
-        css_browser_selector(navigator.userAgent);
-
-        // Set up splitters
-        $('#editors').split({
-            orientation: 'horizontal',
-            limit: 20,
-            position: '50%',
-            onDrag: function() {
-                rendr.cssEditor.resize();
-                rendr.htmlEditor.resize();
-            }
-        });
-
-        $('#content').split({
-            orientation: 'vertical',
-            limit: 20,
-            position: '38%',
-            onDrag: function() {
-                rendr.cssEditor.resize();
-                rendr.htmlEditor.resize();
-            }
-        });
-
-        $(".hsplitter, .vsplitter").append("<span>...</span>");
-
-        rendr.cssEditor = ace.edit("css");
-        rendr.cssEditor.setTheme("ace/theme/rendr");
-        rendr.cssEditor.getSession().setUseWorker(false);
-        rendr.cssEditor.getSession().setMode("ace/mode/css");
-        rendr.cssEditor.setReadOnly(true);
-
-        rendr.htmlEditor = ace.edit("html");
-        rendr.htmlEditor.setTheme("ace/theme/rendr");
-        rendr.htmlEditor.getSession().setUseWorker(false);
-        rendr.htmlEditor.getSession().setMode("ace/mode/html");
-        rendr.htmlEditor.setReadOnly(true);
-
-        $("#css").append('<div class="title">CSS</div>');
-        $("#html").append('<div class="title">HTML</div>');
-
+  angular.element(document).ready(function() {
+    /*
+      CSS Browser Selector v0.4.0 (Nov 02, 2010)
+      Rafael Lima (http://rafael.adm.br)
+      http://rafael.adm.br/css_browser_selector
+      License: http://creativecommons.org/licenses/by/2.5/
+      Contributors: http://rafael.adm.br/css_browser_selector#contributors
+    */
+    function css_browser_selector(u) {
+      var ua = u.toLowerCase(),
+          is = function(t) {
+            return ua.indexOf(t) > -1;
+          }, g = 'gecko',
+          w = 'webkit',
+          s = 'safari',
+          o = 'opera',
+          m = 'mobile',
+          h = document.documentElement,
+          b = [(!(/opera|webtv/i.test(ua)) && /msie\s(\d)/.test(ua)) ? ('ie ie' + RegExp.$1) : is('firefox/2') ? g + ' ff2' : is('firefox/3.5') ? g + ' ff3 ff3_5' : is('firefox/3.6') ? g + ' ff3 ff3_6' : is('firefox/3') ? g + ' ff3' : is('firefox/') ? g + ' ff' + (/firefox\/(\d)/.test(ua) ? RegExp.$1 : '') : is('gecko/') ? g : is('opera') ? o + (/version\/(\d+)/.test(ua) ? ' ' + o + RegExp.$1 : (/opera(\s|\/)(\d+)/.test(ua) ? ' ' + o + RegExp.$2 : '')) : is('konqueror') ? 'konqueror' : is('blackberry') ? m + ' blackberry' : is('android') ? m + ' android' : is('chrome') ? w + ' chrome' : is('iron') ? w + ' iron' : is('applewebkit/') ? w + ' ' + s + (/version\/(\d+)/.test(ua) ? ' ' + s + RegExp.$1 : '') : is('mozilla/') ? g : '', is('j2me') ? m + ' j2me' : is('iphone') ? m + ' iphone' : is('ipod') ? m + ' ipod' : is('ipad') ? m + ' ipad' : is('mac') ? 'mac' : is('darwin') ? 'mac' : is('webtv') ? 'webtv' : is('win') ? 'win' + (is('windows nt 6.0') ? ' vista' : '') : is('freebsd') ? 'freebsd' : (is('x11') || is('linux')) ? 'linux' : '', 'js'];
+      var c = b.join(' ');
+      h.className += ' ' + c;
+      return c;
+    }
+    css_browser_selector(navigator.userAgent);
+
+    // Bootstrap rendr.it angularJS module
+    angular.bootstrap(document, ["RendrIt"]);
+  });
+
+  angular.element(window).load(function() {
+    // Foundation setup
+    $(document).foundationButtons();
+    $(document).foundationCustomForms();
+    $(document).foundationTabs({callback:$.foundation.customForms.appendCustomMarkup});
+
+    // Set up UI handler methods
+    $(document).on("click", ".button, .action", function(e) {
+      var self = this;
+
+      // Abort if disabled
+      if ($(this).hasClass("disabled")) {
+        return false;
+      }
+
+      // For links etc, don't allow the default action
+      e.preventDefault();
     });
 
-    // Interactive elements get configured on window load
-    $(window).load(function() {
-        var debounceCodeChange = $.debounce(rendr.codeChange, 250);
+    // Set up methods to handle URL copying -- replace the contenteditable
+    // bits with regular spans to allow proper selection
+    $(".url").bind("mousedown", function(e) {
+      if ($(e.target).hasClass("paramString") ||
+          $(e.target).hasClass("queryString")) {
+        return true;
+      }
+      $(".paramString,.queryString").removeAttr("contenteditable");
+      selectText($(".url")[0]);
+      return false;
+    });
 
-        // Foundation setup
-        $(document).foundationButtons();
-        $(document).foundationCustomForms();
-        $(document).foundationTabs({callback:$.foundation.customForms.appendCustomMarkup});
+    $("body").bind("mousedown", function(e) {
+      if (!$(e.target).hasClass("url")) {
+        $(".paramString,.queryString").attr("contenteditable", true);
+      }
+    });
 
+    $(document).on("reveal:open", ".reveal-modal", function(e) {
+      $(this).find('.initial').show();
+      $(this).find('.success').hide();
+      $(this).find('.error').hide();
+    });
+
+    $(".reveal-modal dd input").mouseup(function() {
+      $(this).select();
+    });
+  });
+
+  /** Directives 
+   *
+   * Most of these directives 'wrap' the DOM manipulations required by
+   * rendr.it. 
+   *
+   * If you need to do DOM manipulation, write a directive and put
+   * them here.
+   */
+
+  /** tooltip
+   *
+   * <a href="#" tooltip="click me">Click</a>
+   */
+  RendrItMod.directive('tooltip', function() {
+    return {
+      restrict: 'A',
+      link: function(scope, element, attrs) {
         // Set up tooltips
-        $(document).find(".has-tooltip").each(function() {
-            var e = $(this);
-            e.tipsy({
-                delayIn: 750,
-                fade: true,
-                offset: 10,
-                gravity: e.hasClass("northwest") ? "nw" : e.hasClass("northeast") ? "ne" : e.hasClass("east") ? "e" : e.hasClass("west") ? "w" : e.hasClass("south") ? "s" : "n"
-            });
+        $(element).tipsy({
+          delayIn: 750,
+          fade: true,
+          offset: 10,
+          title: function() { return attrs.tooltip;},
+          gravity: element.hasClass("northwest") ? "nw" : element.hasClass("northeast") ? "ne" : element.hasClass("east") ? "e" : element.hasClass("west") ? "w" : element.hasClass("south") ? "s" : "n"
+        });
+      }
+    };
+  });
+
+  /** modal-dialog
+   * 
+   * Handles opening or closing of some Foundation Reveal dialogs in rendr.it.
+   *
+   * <div id="new-rendr" class="reveal-modal small" modal-dialog ng-transclude>...</div>
+   */
+  RendrItMod.directive('modalDialog', function() {
+    return {
+      restrict: 'A',
+      transclude: true,
+      link: function(scope, element, attrs) {
+
+        scope.$on("modal.close", function(event, args) {
+          if (element.attr("id") !== args) { return;}
+          element.triggerHandler('reveal:close');
         });
 
-        // Re-render on each editor/query string change, at most 4x per sec
-        rendr.cssEditor.getSession().on('change', debounceCodeChange);
-        rendr.htmlEditor.getSession().on('change', debounceCodeChange);
+        scope.$on("modal.open",  function(event, args) {
+          if (element.attr("id") !== args) { return;}
+          element.reveal();
+        });
+      }
+    };
+  });
 
-        $(".paramString,.queryString").bind('textchange', debounceCodeChange);
+  /** url-string
+   *
+   * Directive that handles the query string and param string of a
+   * rendr url. Triggers a 'rendrUrlStringChanged' event which
+   * notifies listeners to update the (live) preview content.
+   *
+   * <span class="paramString" url-string="/"...></span>
+   */
+  RendrItMod.directive('urlString', function() {
+    return {
+      restrict: 'A',
+      require: "ngModel",
+      transclude: true,
+      replace: true,
+      link: function(scope, element, attrs, ngModel) {
+        if (!ngModel) { return;}
 
-        // Set up UI handler methods
-        $(document).on("click", ".button, .action", function(e) {
-            var self = this;
+        ngModel.$render = function() {
+          if (element.text() === ngModel.$viewValue) { return;}
+          element.text(ngModel.$viewValue || "");
+        };
 
-            // Abort if disabled
-            if ($(this).hasClass("disabled")) {
-                return false;
-            }
+        element.bind('textchange', $.debounce(function() {
+          updateText(element.text());
+          ngModel.$setViewValue(element.text());
+          scope.$broadcast("rendrUrlStringChanged");
+        }, 400));
 
-            // For any btn-* classes, call the corresponding action method if
-            // defined
-            $.each($(this).attr("class").split(" "), function(i, cls) {
-                if (cls.indexOf("btn-") === 0 && rendr[cls] !== undefined) {
-                    rendr[cls](self);
-                }
-            });
+        var elem = $(element);
+        function updateText(value) {
+          if (value && value.trim()) {
+            elem.prev().text(stringWithLastChar(elem.prev().text(), attrs.urlString));
+          } else {
+            elem.prev().text(stringWithoutLastChar(elem.prev().text(), attrs.urlString));
+          }
+        }
+      }
+    };
+  });
 
-            // For links etc, don't allow the default action
-            e.preventDefault();
+  /** preview-style
+   *
+   * Directive that updates the style of the preview pane according
+   * to the user's chosen theme/color preference.
+   *
+   * <div id="preview" preview-style="options.gridTheme">...</div>
+   */
+  RendrItMod.directive('previewStyle', function() {
+    return {
+      restrict: 'A',
+      link: function(scope, element, attrs) {
+        scope.$watch(attrs.previewStyle, function() {
+          element.removeClass().css('background-color', '');
+          if (scope.options.gridTheme.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
+            $("#preview, #colour-swatch").css('background-color', scope.options.gridTheme);
+            $("#colour, #preview-bgcolour").val(scope.options.gridTheme);
+            $("#preview-bgcolour").attr("checked",true).closest('li').addClass('active');
+          } else {
+            $("#preview").addClass("right_panel " + scope.options.gridTheme);
+          }
+        });
+      }
+    };
+  });
+
+  /** colour-picker
+   *
+   * Theme options colour picker
+   *
+   * <colourpicker name="gridTheme" ng-model="app.theme.grid">..</colourpicker>
+   */
+  RendrItMod.directive('colourpicker', function() {
+    return {
+      restrict: 'E',
+      require: '^ngModel',
+      template: "<input type='radio' name='gridTheme' id='preview-bgcolour'/><label for='preview-bgcolour' id='colour-swatch'>Background color</label><input type='text' id='colour' class='radius'/><div id='colourpicker'></div>",
+      link: function(scope, element, attrs, ngModel) {
+        var previewBgColour = $("#preview-bgcolour"),
+            colour = $("#colour");
+
+        var picker = $.farbtastic("#colourpicker", {
+          width: 120,
+          // Initial callback to allow farbs to set default values
+          callback: function(color) {
+            previewBgColour.val(color);
+            colour.val(color);
+            $('#colour-swatch').css('background-color', color);
+          }
         });
 
-        $(document).on("reveal:open", ".reveal-modal", function(e) {
-            $(this).find('.initial').show();
-            $(this).find('.success').hide();
-            $(this).find('.error').hide();
+        // Set a proper callback that updates the angular model
+        picker.linkTo(function(color) {
+          previewBgColour.val(color);
+          colour.val(color);
+          $('#colour-swatch').css('background-color', color);
+          ngModel.$setViewValue(color);
         });
 
-        $("#css, #html").hoverIntent(
-            function(){
-                $(this).find('.title').fadeOut('fast');
-            },
-            function(){
-                $(this).find('.title').fadeIn('fast');
-            }
-        );
-
-        // Set up methods to handle URL copying -- replace the contenteditable
-        // bits with regular spans to allow proper selection
-        $(".url").bind("mousedown", function(e) {
-            if ($(e.target).hasClass("paramString") ||
-                    $(e.target).hasClass("queryString")) {
-                return true;
-            }
-            $(".paramString,.queryString").removeAttr("contenteditable");
-            selectText($(".url")[0]);
-            return false;
-        });
-        $("body").bind("mousedown", function(e) {
-            if (!$(e.target).hasClass("url")) {
-                $(".paramString,.queryString").attr("contenteditable", true);
-            }
-        });
-        $(".paramString").bind("hastext", function() {
-            $(this).prev().text(stringWithLastChar($(this).prev().text(), "/"));
-        }).bind("notext", function() {
-            $(this).prev().text(stringWithoutLastChar($(this).prev().text(), "/"));
-        });
-        $(".queryString").bind("hastext", function() {
-            $(this).prev().text(stringWithLastChar($(this).prev().text(), "?"));
-        }).bind("notext", function() {
-            $(this).prev().text(stringWithoutLastChar($(this).prev().text(), "?"));
-        });
-
-        // Initialise colourpicker
-        var $colourpicker = $.farbtastic("#colourpicker", {
-            callback: function(color) {
-                $('#colour, #preview-bgcolour').val(color);
-                $('#colour-swatch').css('background-color', color);
-            },
-            width: 120
-        });
-
-        // Update colourpicker wheel from text input
         $('#colour').keyup(function(){
-            var enteredcolour = $(this).val();
-            var isHexColour = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+          var enteredcolour = $(this).val();
+          var isHexColour = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 
-            $colourpicker.setColor(enteredcolour);
-            $(this).css('color', isHexColour.test(enteredcolour) ? '#404040' : '#f00');
+          picker.setColor(enteredcolour);
+          $(this).css('color', isHexColour.test(enteredcolour) ? '#404040' : '#f00');
         });
 
         // Focus Colourpicker by clicking on either label or field
         $('#colour-swatch, #colour').click(function(){
-            $('#preview-bgcolour').attr('checked', true);
-            $(this).closest('li').addClass('active');
-            $('#colourpicker').fadeIn();
-            $colourpicker.setColor($('#preview-bgcolour').val());
+          previewBgColour.attr('checked', true);
+          $(this).closest('li').addClass('active');
+          $('#colourpicker').fadeIn();
+          picker.setColor(previewBgColour.val());
         });
 
         // Hide colourpicker
@@ -737,23 +324,482 @@ SOFTWARE.
         $('#options input[name=gridTheme]').change(function() {
             $(this).closest('ul').children('li').removeClass('active');
         });
+      }
+    };
+  });
 
-        $(".reveal-modal dd input").mouseup(function() {
-            $(this).select();
+  /** splitter
+   *
+   * Wraps the jQuery splitter plugin and broadcasts 'resize' events.
+   * The HTML and CSS editors listen to this event and resizes their
+   * window accordingly.
+   *
+   * <splitter orientation="horizontal" limit="20" position="40%">...</splitter>
+   */
+  RendrItMod.directive('splitter', function() {
+    return {
+      restrict: 'E',
+      template: "<div ng-transclude></div>",
+      transclude: true,
+      replace: true,
+      link: function(scope, element, attrs) {
+        element.attr('id', attrs.id);
+        element.split({
+          orientation: attrs.orientation,
+          limit: attrs.limit,
+          position: attrs.position,
+          onDrag: function() {
+            scope.$broadcast("splitter.resize");
+          }
+        });
+        var cls = attrs.orientation === 'horizontal' ? '.hsplitter' : '.vsplitter';
+        $(cls).append("<span>...</span>");
+      }
+    };
+  });
+
+  /** preview
+   *
+   * Handles updates to the content preview, live or otherwise.
+   *
+   * <preview body="..." css="..." mode="...">...</preview> 
+   */
+  RendrItMod.directive('preview', function($timeout, Rendr) {
+    return {
+      restrict: 'E',
+      template: "<iframe ng-transclude style='width:0;height:0'></iframe>",
+      transclude: true,
+      replace: true,
+      link: function(scope, element, attrs) {
+
+        scope.$watch(attrs.css, function(newv) {
+          updateContents(newv, scope.app.content.body);
         });
 
-        // Sync options selections with current localStorage value
-        rendr.syncOptions();
+        scope.$watch(attrs.body, function(newv) {
+          updateContents(scope.app.content.css, newv);
+        });
 
-        // Render the initial content
-        rendr.localPreview(rendr.htmlEditor.getSession().getValue(),
-            rendr.cssEditor.getSession().getValue(), "", "",
-            function(doc) {
-                $(doc).find("a[data-reveal-id]").click(function(e) {
-                    $('#' + $(this).attr("data-reveal-id")).reveal($(this).data());
-                    return false;
-                });
-            }
-        );
-    });
+        scope.$watch(attrs.mode, function() {
+          updateContents(scope.app.content.css, scope.app.content.body);
+        });
+
+        // Update preview content when the url param or query string changes
+        scope.$on('rendrUrlStringChanged', function() {
+          updateContents(scope.app.content.css, scope.app.content.body);
+        });
+
+        function updateContents(css, body) {
+          if (scope.app.content.previewMode === 'live') {
+            updateLocalContent(css, body);
+          } else {
+            updateRenderedContent(css, body);
+          }
+        }
+
+        function updateLocalContent(css, body) {
+          $timeout(function() {
+            var startTs = new Date(),
+                doc = element.contents()[0],
+                qs = scope.app.rendr.testParams,
+                params = scope.app.rendr.testPath,
+                data = Rendr.parseQuery("?" + qs),
+                content;
+
+            data.params = (params || '').split('/');
+
+            content = Mustache.render(
+              "<html><head><style>{{{css}}}</style>" +
+                "<script>query = {{{query}}};window.decodeBase64UrlSafe" +
+                " = function (s) { s = s.replace(/-/g, '+').replace(" +
+                "/_/g, '/'); return decodeURIComponent(escape(atob(s " +
+                "))); };</script></head>" +
+                "<body style='margin:0;padding:0;overflow:hidden'>" +
+                "{{{html}}}</body></html>", {
+                  css: Mustache.render(css, data),
+                  html: Mustache.render(body, data),
+                  query: JSON.stringify(data)
+                }
+            );
+
+            element.load(function() {
+              var body = element.contents().find("html"),
+                  w = body.width(),
+                  h = body.height();
+
+              element.css({
+                width: w + "px",
+                height: h + "px",
+                "margin-left": '-' + Math.round(w / 2) + "px",
+                "margin-top": '-' + Math.round(h / 2) + "px"
+              });
+
+              scope.app.content.status.width = w;
+              scope.app.content.status.height = h;
+              scope.app.content.status.filesize = "?";
+              scope.app.content.status.rendertime = "" + ((new Date()).valueOf() - startTs.valueOf()) / 1000.0;
+            });
+
+            doc.open();
+            doc.write(content);
+            doc.close();
+            
+          }, 1);
+        }
+
+        // Update rendered preview
+        function updateRenderedContent(css, body) {
+          $timeout(function() {
+            var startTs = new Date(),
+                doc = element.contents()[0],
+                qs = scope.app.rendr.testParams,
+                params = scope.app.rendr.testPath,
+                format = 'png',
+                content,
+                url;
+
+            url = "/" + scope.app.rendr.libraryId + "/" +
+              scope.app.rendr.rendrId + "/" + params + "." +
+              format + "?" + qs;
+
+            element.load(function() {
+              var body = element.contents().find("html"),
+                  w = body.width(),
+                  h = body.height();
+
+              element.css({
+                width: w + "px",
+                height: h + "px",
+                "margin-left": '-' + Math.round(w / 2) + "px",
+                "margin-top": '-' + Math.round(h / 2) + "px"
+              });
+
+              scope.app.content.status.width = w;
+              scope.app.content.status.height = h;
+              scope.app.content.status.filesize = "?";
+              scope.app.content.status.rendertime = "" + ((new Date()).valueOf() - startTs.valueOf()) / 1000.0;
+            });
+
+            doc.open();
+            doc.write("<html><head></head><body style='margin:0;pading:" +
+                      "0;overflow:hidden'><img src='" + url +
+                      "' style='display:block' /></body></html>");
+            doc.close();
+          }, 1);
+        }
+
+        $timeout(function() {
+          // Enable Foundation Reveal elements that are in the iframe
+          element.contents().find("a[data-reveal-id]").click(function(e) {
+            $('#' + $(this).attr("data-reveal-id")).reveal($(this).data());
+            return false;
+          });
+        }, 400) 
+
+      }
+    };
+  });
+
+  /** editor
+   *
+   * Provides a wrapper directive to ACE editor. Handles updates to
+   * the HTML and CSS editors.
+   *
+   * <editor ..></editor>
+   */
+  RendrItMod.directive('editor', function() {
+    return {
+      restrict: 'E',
+      require: "ngModel",
+      transclude: true,
+      template: "<pre ng-transclude></pre>",
+      replace: true,
+      link: function(scope, element, attrs, ngModel) {
+
+        // initialise editor
+        var editor = ace.edit(attrs.id);
+        editor.setTheme("ace/theme/rendr");
+        editor.getSession().setUseWorker(false);
+        editor.getSession().setMode("ace/mode/" + attrs.mode);
+        //editor.setReadOnly(true);
+
+        ngModel.$setViewValue(editor.getSession().getValue());
+        scope.app.content[attrs.property] = ngModel.$modelValue;
+
+        ngModel.$render = function() {
+          // Called when the view needs to be updated
+          editor.getSession().setValue(ngModel.$viewValue);
+          editor.setReadOnly(false);
+        };
+
+        // add resize listener
+        scope.$on("splitter.resize", function() {
+          editor.resize();
+        });
+
+        // add change listeners
+        var debounceCodeChange = $.debounce(function() {
+          // Check if editor content changed..
+          if (editor.getSession().getValue() !== ngModel.$modelValue) {
+            scope.$apply(function() {
+              // Set the value of the model to the editor's content
+              ngModel.$setViewValue(editor.getSession().getValue());
+              // Switch to live view if code has changed
+              if (scope.app.content.previewMode === 'rendered') {
+                scope.app.content.previewMode = 'live';
+              }
+            });
+          }
+
+          scope.app.content.hasChanged = scope.app.rendr[attrs.property] !== ngModel.$modelValue;
+
+        }, 250);
+        
+        // Re-render on each editor/query string change, at most 4x per sec
+        editor.getSession().on('change', debounceCodeChange);
+        element.append('<div class="title">' + attrs.id.toUpperCase() + '</div>');
+
+        // Fade pane title on hover
+        $("#" + attrs.id).hoverIntent(function() {
+          $(this).find('.title').fadeOut('fast');
+        }, function() {
+          $(this).find('.title').fadeIn('fast');
+        });
+      }
+    };
+  });
+
+  /** Services
+   *
+   * The following services handle loading of library, rendr, and user options.
+   */
+  RendrItMod.factory('Library', ["$http", function($http) {
+    var Library = Object.create(null);
+
+    Library.get = function(id, key) {
+      return $http.get('/library/' + id, {params: {key: key}}).then(function(response) {
+        angular.extend(Library, response.data);
+        Library.key = key;
+        return Library;
+      }, function(response) {
+        return Library;
+      });
+    };
+
+    Library.save = function(name) {
+      return $http.post('/library/', $.param({name: name}), {headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}})
+        .then(function(response) {
+          angular.extend(Library, response.data);
+          return Library;
+        });
+    };
+    return Library;
+  }]);
+
+  RendrItMod.factory('Rendr', ["$http", "Library",  function($http, Library) {
+    var Rendr = Object.create(null);
+    Rendr.get = function(libraryId, rendrId) {
+      return $http.get('/' + libraryId + "/" + rendrId + ".json").then(function(response) {
+        angular.extend(Rendr, response.data);
+        return Rendr;
+      });
+    };
+
+    Rendr.save = function(libraryId, libraryKey, rendrId, css, html, testPath, testParams) {
+      return $http.put('/rendr/' + libraryId + "/" + rendrId, {
+        libraryKey: libraryKey,
+        css: css,
+        body: html,
+        testPath: testPath,
+        testParams: testParams
+      }).then(function(response) {
+        angular.extend(Rendr, response.data);
+        if (Library.rendrs.indexOf(response.data.rendrId) === -1) {
+          Library.rendrs.push(response.data.rendrId);
+        }
+        return Rendr;
+      });
+    };
+
+    // Convert a query string to a list of parameters
+    Rendr.parseQuery = function(query) {
+      var params = {},
+          pairs = query.substring(1).split('&'), p, i;
+      for (i = 0; i < pairs.length; i++) {
+        p = pairs[i].split('=');
+        params[decodeURIComponent(p[0])] = decodeURIComponent(p[1]);
+      }
+      return params;
+    };
+
+    return Rendr;
+  }]);
+
+  RendrItMod.factory('Options', function() {
+    var Options = Object.create(null),
+        defaults = {"theme": "theme-dark", "gridTheme": "preview-wood"};
+
+    angular.extend(Options, defaults);
+
+    Options.get = function() {
+      Options.sync();
+      return Options;
+    };
+
+    Options.save = function(options) {
+      if (!options) { return;}
+      localStorage.options = JSON.stringify(options);
+      Options.sync();
+    };
+
+    Options.sync = function() {
+      var options = localStorage.options;
+      if (!options) {
+        options = defaults;
+      } else {
+        options = JSON.parse(localStorage.options);
+      }
+      angular.extend(Options, options);
+      return Options;
+    };
+
+    return Options;
+  });
+
+  /** Controller
+   *
+   */
+  RendrItMod.controller('AppController', ["$scope", "$timeout", "Options", "Rendr", "Library", function($scope, $timeout, Options, Rendr, Library) {
+
+    $scope.app = {
+      content: {
+        body: '',
+        css: '',
+        previewMode: 'live',
+        hasChanged: false,
+        status: {width: '--', height: '--', filesize: '--', rendertime: '--'}
+      },
+      theme: {value: "theme-dark", grid: "preview-wood"},
+      newRendr: {contentSource: '', rendrId: ''},
+      rendr: {body: '', css: '', testParams: '', testPath: ''}
+    };
+
+    // Load / Initialize options
+    // scope.options is the user's saved theme;
+    // app.theme is the options view's model
+    $scope.options = Options.get();
+    $scope.app.theme.value = $scope.options.theme;
+    $scope.app.theme.grid = $scope.options.gridTheme;
+
+    $scope.saveOptions = function() {
+      // This is unnecessary if we apply the theme instantly
+      $scope.options.theme = $scope.app.theme.value;
+      $scope.options.gridTheme = $scope.app.theme.grid;
+      Options.save($scope.options);
+      $scope.$broadcast("modal.close", "options");
+    };
+
+    $scope.showNewRendr = function() {
+      if (!$scope.library) { return;}
+      $scope.$broadcast("modal.open", "new-rendr");
+    };
+
+    $scope.loadRendr = function(rendrId) {
+      $scope.inprogress = true;
+      Rendr.get($scope.library.libraryId, rendrId)
+        .then(function(rendr) {
+          $scope.inprogress = false;
+          $scope.app.rendr = rendr;
+          $scope.app.content.body = rendr.body;
+          $scope.app.content.css = rendr.css;
+        }, function() {
+          $scope.inprogress = false;
+          $scope.$broadcast("modal.open", "load-rendr-error");
+        });
+    };
+
+    $scope.newRendr = function() {
+      var html, css;
+
+      $scope.inprogress = true;
+      if ($scope.app.newRendr.contentSource === 'current') {
+        css = $scope.app.content.css;
+        html = $scope.app.content.body;
+      } else {
+        css = "/* Rendr " + $scope.app.newRendr.rendrId + ": CSS content */";
+        html = "<!-- Rendr " + $scope.app.newRendr.rendrId + ": HTML body content -->";
+      }
+
+      Rendr.save($scope.library.libraryId, $scope.library.key, $scope.app.newRendr.rendrId, css, html,
+                 $scope.app.rendr.testParams, $scope.app.rendr.testPath)
+        .then(function(rendr) {
+          $scope.inprogress = false;
+          $scope.app.rendr = rendr;
+          $scope.app.content.css = rendr.css;
+          $scope.app.content.body = rendr.body;
+
+          $scope.library = Library;
+          $scope.$broadcast("modal.close", "new-rendr");
+        }, function() {
+          //$scope.app.rendr = null;
+          $scope.inprogress = false;
+        });
+    };
+
+    $scope.saveRendr = function() {
+      if (!$scope.editorHasUnsavedChanges()) { return;}         
+      $scope.inprogress = true;
+
+      Rendr.save(Library.libraryId, Library.key, Rendr.rendrId,
+                 $scope.app.content.css, $scope.app.content.body,
+                 Rendr.testPath, Rendr.testParams)
+        .then(function(rendr) {
+          $scope.inprogress = false;
+          $scope.app.rendr = rendr;
+          $scope.app.content.css = rendr.css;
+          $scope.app.content.body = rendr.body;
+          $scope.app.content.hasChanged = false;
+        }, function() {
+          $scope.$broadcast("modal.open", "save-rendr-error");
+          $scope.inprogress = false;
+        });
+    };
+
+    $scope.previewLive = function() {
+      if ($scope.app.content.previewMode == "rendered") {
+        $scope.app.content.previewMode = "live";
+      }
+    };
+
+    $scope.previewRendered = function() {
+      if ($scope.app.content.previewMode === "live") {
+        $scope.app.content.previewMode = "rendered";
+      }
+    };
+
+    $scope.editorHasUnsavedChanges = function() {
+      return $scope.app.content.hasChanged;
+    };
+
+    $scope.loadLibrary = function() {
+      $scope.inprogress = true;
+      Library.get($scope.library.id, $scope.libraryKey)
+        .then(function(library) {
+          $scope.inprogress = false;
+          $scope.library = library;
+        });
+    };
+
+    $scope.newLibrary = function() {
+      $scope.inprogress = true;
+      Library.save($scope.library.name)
+        .then(function(library) {
+          $scope.inprogress = false;
+          $scope.library = library;
+        });
+    };
+
+  }]);
+
+  // end angular
 })(jQuery);

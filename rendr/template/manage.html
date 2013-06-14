@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"> <!-- ng-app="RendrIt"-->
 <head>
     <meta charset="utf-8" />
 
@@ -10,11 +10,10 @@
 
     <!-- Include head block assets -->
     {% for f in environment['styles'] %}
-        <link rel="stylesheet" href="{{ f }}">
+        <link rel="stylesheet" href="{{ f }}"/>
     {% end %}
-
 </head>
-<body class="theme-dark">
+<body class="theme-dark" ng-class="options.theme" ng-controller="AppController">
     <form>
         <header>
             <div id="library-ctl">
@@ -26,38 +25,63 @@
                     </ul>
                 </div>
 
-                <div id="library-menu" class="button ctl radius dropdown disabled">
-                    <span class="library-name">(No library loaded)</span>
-                    <ul></ul>
+                <div id="library-menu" class="button ctl radius dropdown disabled" ng-class="{'disabled': !library.key}">
+                                              
+                     
+                    <span class="library-name" ng-bind="library.name || '(No library loaded)'"></span>
+                    <ul>
+                      <li ng-repeat="rendr in library.rendrs" ng-class="{'disabled': inprogress, 'in-progress': inprogress}">
+                        <a href="#" class="action" ng-click="loadRendr(rendr)" ng-bind="rendr"></a>
+                      </li>
+                    </ul>
                 </div>
 
                 <div id="rendr-title">
-                    <span class="rendr-name"></span>
+                    <span class="rendr-name" ng-bind="app.rendr.rendrId || ''"></span>
                 </div>
             </div>
             <div id="preview-ctl">
-                <a href="#" class="button ctl menu radius disabled btn-new-rendr" ><i class="icon-file"></i>&nbsp; New</a>
-                <a href="#" class="button ctl radius disabled btn-save-rendr"><i class="icon-save"></i>&nbsp; Save</a>
+                <a href="#" class="button ctl menu radius btn-new-rendr disabled" ng-class="{'disabled': !library.key }" ng-click="showNewRendr()" ><i class="icon-file"></i>&nbsp; New</a>
+                <a href="#" ng-class="{'disabled':!editorHasUnsavedChanges(), 'in-progress': inprogress }"
+                   class="button ctl radius btn-save-rendr disabled" ng-click="saveRendr()"><i class="icon-save"></i>&nbsp; Save</a>
 
                 <ul class="button-group radius">
-                    <li><a href="#" class="button ctl active radius live btn-live-preview has-tooltip" title="Live preview"><span><i class="icon-eye-open"></i></span></a></li>
-                    <li><a href="#" class="button ctl rendered btn-rendered-preview has-tooltip" title="Image preview"><span><i class="icon-picture"></i></span></a></li>
+                    <li>
+                      <a href="#" ng-click="previewLive()" ng-class="{'active': app.content.previewMode == 'live'}"
+                         tooltip="Live preview" class="button ctl active radius live btn-live-preview">
+                        <span><i class="icon-eye-open"></i></span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" ng-click="previewRendered()" ng-class="{'disabled': editorHasUnsavedChanges(), 'active': app.content.previewMode == 'rendered' && !editorHasUnsavedChanges()}"
+                         class="button ctl rendered btn-rendered-preview " tooltip="Image preview">
+                        <span><i class="icon-picture"></i></span>
+                      </a>
+                    </li>
                 </ul>
 
                 <div id="url-input">
-                    <div class="url"><span class="url-prefix">http://l</span><span class="libraryId"></span><span class="url-host">.rendr.it/</span><span class="rendrId"></span><span class="paramString has-tooltip" contenteditable="true" title="Edit parameters"></span><span class="url-postfix">.png</span><span class="queryString has-tooltip" contenteditable="true" title="Edit query string"></span></div>
+                    <div class="url">
+                      <span class="url-prefix">http://l</span>
+                      <span class="libraryId" ng-bind="app.rendr.libraryId"></span>
+                      <span class="url-host">.rendr.it/</span>
+                      <span class="rendrId" ng-bind="app.rendr.rendrId"></span>
+                      <span ng-transclude ng-model="app.rendr.testPath" url-string="/" class="paramString" contenteditable="true" tooltip="Edit parameters"></span>
+                      <span class="url-postfix">.png</span>
+                      <span ng-transclude ng-model="app.rendr.testParams" url-string="?" class="queryString" contenteditable="true" tooltip="Edit query string"></span>
+                    </div>
                 </div>
 
                 <!-- <a href="#" data-reveal-id="options" data-animation="fade" class="button ctl radius options"><i class="icon-cog"></i></a> -->
                 <ul class="button-group radius">
-                    <li><a href="#" data-reveal-id="options" data-animation="fade" class="button ctl radius options has-tooltip" title="Theme options"><i class="icon-cog"></i></a></li>
-                    <li><a href="#" data-reveal-id="help" data-animation="fade" class="button ctl radius options has-tooltip northeast" title="Rendr tips"><i class="icon-info-sign"></i></a></li>
+                    <li><a href="#" data-reveal-id="options" data-animation="fade" class="button ctl radius options" tooltip="Theme options"><i class="icon-cog"></i></a></li>
+                    <li><a href="#" data-reveal-id="help" data-animation="fade" class="button ctl radius options northeast" tooltip="Rendr tips"><i class="icon-info-sign"></i></a></li>
                 </ul>
             </div>
         </header>
-        <div id="content">
-            <div id="editors">
-                <pre id="css">/* Rendr Default Example: CSS content */
+        <splitter id="content" orientation="vertical" limit="20" position="38%">
+          <splitter id="editors" orientation="horizontal" limit="20" position="50%">
+            <editor ng-cloak id="css" mode="css" property="css" ng-model="app.content.css">/* Rendr Default Example: CSS content */
 
 @font-face {
     font-family: 'Alegreya';
@@ -106,59 +130,64 @@ h3 {
 a {
     color: #00aeef;
 }
-</pre>
-                <pre id="html">&lt;!-- Rendr Default Example: HTML body content -->
+            </editor>
+            <editor ng-cloak id="html" mode="html" property="body" ng-model="app.content.body">&lt;!-- Rendr Default Example: HTML body content -->
 
 &lt;div>
     &lt;h2>HELLO &lt;span>my name is&lt;/span>&lt;/h2>
     &lt;h3>Rendr.it&lt;/h3>
-    &lt;p>To get started, &lt;a href="#" data-reveal-id="new-library" data-animation="fade">create a new library&lt;/a> or check out our &lt;a href="#" data-reveal-id="help" data-anmiation="fade">help page&lt;/a> for some handy tips.&lt;/p>
+    &lt;p>To get started, &lt;a href="#" data-reveal-id="new-library" data-animation="fade">create a new library&lt;/a> or check out our &lt;a href="#" data-reveal-id="help" data-animation="fade">help page&lt;/a> for some handy tips.&lt;/p>
     &lt;p>After you create a new library, to start editing you'll need to create a new Rendr or save a copy of this one, using the "New" and "Save" buttons above.&lt;/p>
 &lt;/div>
-</pre>
-            </div>
-            <div id="preview" class="preview-wood">
-                <div class="container"><iframe src="about:blank"></iframe></div>
-                <div class="status">
+            </editor>
+            </splitter>
+            <div id="preview" preview-style="options.gridTheme">
+              <div class="container">
+                <preview body="app.content.body" css="app.content.css" mode="app.content.previewMode"></preview>
+              </div>
+              <div class="status">
                     <dl>
                         <dt>Dimensions:</dt>
-                        <dd><span class="width">--</span> × <span class="height">--</span> px</dd>
+                        <dd><span class="width" ng-bind="app.content.status.width"></span> × <span class="height" ng-bind="app.content.status.height"></span> px</dd>
 
                         <dt>File Size:</dt>
-                        <dd><span class="filesize">--</span> KB</dd>
+                        <dd><span class="filesize" ng-bind="app.content.status.filesize"></span> KB</dd>
 
                         <dt>Render Time:</dt>
-                        <dd><span class="rendertime">--</span> sec</dd>
+                        <dd><span class="rendertime" ng-bind="app.content.status.rendertime"></span> sec</dd>
                     </dl>
-                </div>
+              </div>
             </div>
-        </div>
+        </splitter>
     </form>
 
     <!-- Reveal modals -->
     <div id="load-library" class="reveal-modal small">
-        <div class="initial">
+        <div class="initial" ng-hide="!inprogress">
             <h2>Load Library</h2>
             <p class="lead">Please enter your library&rsquo;s ID and secret key.</p>
             <form>
-                <input type="text" name="libraryId" placeholder="Library ID" />
-                <input type="text" name="libraryKey" placeholder="Secret Key" />
+                <input type="text" name="libraryId"
+                       placeholder="Library ID" ng-model="library.id" />
+                <input type="text" name="libraryKey"
+                       placeholder="Secret Key" ng-model="libraryKey" />
             </form>
 
             <p>These values were shown to you when you created your library.</p>
 
-            <a href="#" class="button primary radius btn-load-library-submit">Load Library</a>
+            <a href="#" class="button primary radius"
+               ng-class="{'disabled': inprogress, 'in-progress': inprogress}" ng-click="loadLibrary()">Load Library</a>
             <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
         </div>
 
-        <div class="error">
+        <div class="error" ng-show="!inprogress && !library.key">
             <h2>Error</h2>
             <p class="lead">Sorry, the library you attempted to load could not be accessed. Please check your Library ID
             and Secret Key, and try again.</p>
             <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
         </div>
         
-        <div class="success">
+        <div class="success" ng-show="!inprogress && library.key">
             <h2><i class="icon-ok-sign"></i> Library Loaded</h2>
             <p class="lead">You have sucessfully loaded your library.</p>
             <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
@@ -166,7 +195,7 @@ a {
     </div>
 
     <div id="new-library" class="reveal-modal small">
-        <div class="initial">
+        <div class="initial" ng-hide="!inprogress">
             <h2>New Library</h2>
 
             <p class="panel warning">Once your library has been created, you&rsquo;ll be shown a <b>Library ID</b> and a <b>Secret Key</b>.
@@ -174,21 +203,22 @@ a {
             You will need these values to access and modify your rendrs.</p>
 
             <form>
-                <input type="text" name="libraryName" placeholder="Library Name" />
-                <a href="#" class="button primary radius btn-new-library-submit">Create Library</a>
+                <input type="text" name="libraryName"
+                       placeholder="Library Name" ng-model="library.name" />
+                <a href="#" ng-class="{'disabled': inprogress, 'in-progress': inprogress }" class="button primary radius" ng-click="newLibrary()">Create Library</a>
             </form>
 
             <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
         </div>
 
-        <div class="success">
+        <div class="success" ng-show="!inprogress && library.key">
             <h2>Library Credentials</h2>
             <p class="lead">Your library has been created.</p>
             <dl>
                 <dt><strong>Library ID</strong></dt>
-                <dd><input type="text" class="library-id" readonly="readonly" /></dd>
+                <dd><input value="((library.libraryId))" type="text" class="library-id" readonly="readonly" /></dd>
                 <dt><strong>Secret Key</strong></dt>
-                <dd><input type="text" class="secret-key" readonly="readonly" /></dd>
+                <dd><input value="((library.key))" type="text" class="secret-key" readonly="readonly" /></dd>
             </dl>
             <p>Please copy these values to a secure location, such as a password manager. If you lose them, you will not
             be able to access or modify your rendrs.</p>
@@ -196,79 +226,81 @@ a {
             <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
         </div>
 
-        <div class="error">
+        <div class="error" ng-show="!inprogress && !library.key">
             <h2>Error</h2>
             <p class="lead">Sorry, your library could not be created. Please try again later.</p>
             <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
         </div>
     </div>
 
-    <div id="new-rendr" class="reveal-modal small">
-        <div class="initial">
+    <div id="new-rendr" class="reveal-modal small" modal-dialog ng-transclude>
+        <div class="initial" ng-hide="!app.rendr">
             <h2>New Rendr</h2>
             <p class="lead">Please enter the ID of your new rendr.</p>
-            <form><input type="text" name="rendrId" placeholder="Rendr ID" /></form>
+            <form>
+              <input type="text" name="rendrId" placeholder="Rendr ID"
+                     ng-model="app.newRendr.rendrId" />
+            </form>
 
             <p>This ID will form part of the rendr&rsquo;s URL, and
             cannot be modified once the rendr is created.</p>
 
             <form>
                 Create with:
-                <label><input name="contentSource" type="radio" value="current" checked="checked" /> Current content</label>
-                <label><input name="contentSource" type="radio" value="empty" /> Empty content</label>
+                <label><input ng-model="app.newRendr.contentSource" type="radio" value="current" checked="checked" /> Current content</label>
+                <label><input ng-model="app.newRendr.contentSource" type="radio" value="empty" /> Empty content</label>
             </form>
 
-            <a href="#" class="button radius btn-new-rendr-submit">Create Rendr</a>
+            <a href="#" ng-class="{'disabled': inprogress, 'in-progress': inprogress}"
+               class="button radius" ng-click="newRendr()">Create Rendr</a>
             <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
         </div>
 
-        <div class="error">
+        <div class="error" ng-show="!inprogress && !app.rendr">
             <h2>Error</h2>
             <p class="lead">Sorry, your rendr could not be created. Please try again.</p>
             <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
         </div>
     </div>
 
-    <div id="save-rendr-error" class="reveal-modal small">
+    <div id="save-rendr-error" class="reveal-modal small" ng-transclude modal-dialog>
         <h2>Error</h2>
         <p class="lead">Sorry, your rendr could not be saved. Please try again.</p>
         <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
     </div>
 
-    <div id="load-rendr-error" class="reveal-modal small">
+    <div id="load-rendr-error" class="reveal-modal small" ng-transclude modal-dialog>
         <h2>Error</h2>
         <p class="lead">Sorry, your rendr could not be loaded. Please try again.</p>
         <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
     </div>
 
-    <div id="options" class="reveal-modal small">
+    <div id="options" class="reveal-modal small" ng-transclude modal-dialog> 
         <h2>Options</h2>
 
         <form>
             <fieldset>
                 <h5>Theme</h5>
                 <ul class="swatch-library">
-                    <li><input type="radio" name="theme" value="theme-dark" id="theme-dark" checked="checked" /> <label for="theme-dark">Dark</label></li>
-                    <li><input type="radio" name="theme" value="theme-light" id="theme-light" /> <label for="theme-light">Light</label></li>
+                    <li><input type="radio" name="theme" ng-model="app.theme.value" value="theme-dark" id="theme-dark"/> <label for="theme-dark">Dark</label></li>
+                    <li><input type="radio" name="theme" ng-model="app.theme.value" value="theme-light" id="theme-light" /> <label for="theme-light">Light</label></li>
                 </ul>
             </fieldset>
             <fieldset>
                 <h5>Preview style</h5>
                 <ul class="swatch-library">
-                    <li><input type="radio" name="gridTheme" value="preview-paper" id="preview-paper" /> <label for="preview-paper">Paper Grid</label></li>
-                    <li><input type="radio" name="gridTheme" value="preview-chequerboard" id="preview-chequerboard" /> <label for="preview-chequerboard">Transparent Chequerboard</label></li>
-                    <li><input type="radio" name="gridTheme" value="preview-wood" id="preview-wood" checked="checked" /> <label for="preview-wood">Wood</label></li>
-                    <li><input type="radio" name="gridTheme" value="preview-blueprint" id="preview-blueprint" /> <label for="preview-blueprint">Blueprint</label></li>
+                    <li><input type="radio" name="gridTheme" ng-model="app.theme.grid" value="preview-paper" id="preview-paper" /> <label for="preview-paper">Paper Grid</label></li>
+                    <li><input type="radio" name="gridTheme" ng-model="app.theme.grid" value="preview-chequerboard" id="preview-chequerboard" /> <label for="preview-chequerboard">Transparent Chequerboard</label></li>
+                    <li><input type="radio" name="gridTheme" ng-model="app.theme.grid" value="preview-wood" id="preview-wood" /> <label for="preview-wood">Wood</label></li>
+                    <li><input type="radio" name="gridTheme" ng-model="app.theme.grid" value="preview-blueprint" id="preview-blueprint" /> <label for="preview-blueprint">Blueprint</label></li>
                     <li>
-                        <input type="radio" name="gridTheme" id="preview-bgcolour" /> <label for="preview-bgcolour" id="colour-swatch">Background color</label>
-                        <input type="text" id="colour" class="radius" />
-                        <div id="colourpicker"></div>
+                      <colourpicker name="gridTheme" ng-model="app.theme.grid"></colourpicker>
                     </li>
                 </ul>
             </fieldset>
         </form>
 
-        <a href="#" class="button radius btn-options-submit">Save Options</a>
+        <a href="#" class="button radius" ng-click="saveOptions()">Save Options</a>
         <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
     </div>
 
@@ -332,3 +364,5 @@ a {
     {% end %}
 </body>
 </html>
+
+

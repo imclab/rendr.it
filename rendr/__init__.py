@@ -76,6 +76,7 @@ ASSET_MANIFEST = {
         "/static/js/ace/worker-javascript.js",
         "/static/js/ace/theme-mimeformat.js",
         "/static/js/ace/ext-searchbox.js",
+        "/static/js/angular.js",
         "/static/js/rendr.it.js"
     ]
 }
