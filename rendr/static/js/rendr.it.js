@@ -96,16 +96,17 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
 
   angular.element(window).load(function() {
     // Foundation setup
-    $(document).foundationButtons();
-    $(document).foundationCustomForms();
-    $(document).foundationTabs({callback:$.foundation.customForms.appendCustomMarkup});
+    var doc = angular.element(document);
+    doc.foundationButtons();
+    doc.foundationCustomForms();
+    doc.foundationTabs({callback:$.foundation.customForms.appendCustomMarkup});
 
     // Set up UI handler methods
-    $(document).on("click", ".button, .action", function(e) {
+    doc.on("click", ".button, .action", function(e) {
       var self = this;
 
       // Abort if disabled
-      if ($(this).hasClass("disabled")) {
+      if (angular.element(this).hasClass("disabled")) {
         return false;
       }
 
@@ -115,30 +116,31 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
 
     // Set up methods to handle URL copying -- replace the contenteditable
     // bits with regular spans to allow proper selection
-    $(".url").bind("mousedown", function(e) {
-      if ($(e.target).hasClass("paramString") ||
-          $(e.target).hasClass("queryString")) {
+    angular.element(".url").bind("mousedown", function(e) {
+      if (angular.element(e.target).hasClass("paramString") ||
+          angular.element(e.target).hasClass("queryString")) {
         return true;
       }
-      $(".paramString,.queryString").removeAttr("contenteditable");
-      selectText($(".url")[0]);
+      angular.element(".paramString,.queryString").removeAttr("contenteditable");
+      selectText(angular.element(".url")[0]);
       return false;
     });
 
-    $("body").bind("mousedown", function(e) {
-      if (!$(e.target).hasClass("url")) {
-        $(".paramString,.queryString").attr("contenteditable", true);
+    angular.element("body").bind("mousedown", function(e) {
+      if (!angular.element(e.target).hasClass("url")) {
+        angular.element(".paramString,.queryString").attr("contenteditable", true);
       }
     });
 
-    $(document).on("reveal:open", ".reveal-modal", function(e) {
-      $(this).find('.initial').show();
-      $(this).find('.success').hide();
-      $(this).find('.error').hide();
+    doc.on("reveal:open", ".reveal-modal", function(e) {
+      var _this = angular.element(this);
+      _this.find('.initial').show();
+      _this.find('.success').hide();
+      _this.find('.error').hide();
     });
 
-    $(".reveal-modal dd input").mouseup(function() {
-      $(this).select();
+    angular.element(".reveal-modal dd input").mouseup(function() {
+      angular.element(this).select();
     });
   });
 
@@ -160,7 +162,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
       restrict: 'A',
       link: function(scope, element, attrs) {
         // Set up tooltips
-        $(element).tipsy({
+        element.tipsy({
           delayIn: 750,
           fade: true,
           offset: 10,
@@ -224,12 +226,11 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
           scope.$broadcast("rendrUrlStringChanged");
         }, 400));
 
-        var elem = $(element);
         function updateText(value) {
           if (value && value.trim()) {
-            elem.prev().text(stringWithLastChar(elem.prev().text(), attrs.urlString));
+            element.prev().text(stringWithLastChar(element.prev().text(), attrs.urlString));
           } else {
-            elem.prev().text(stringWithoutLastChar(elem.prev().text(), attrs.urlString));
+            element.prev().text(stringWithoutLastChar(element.prev().text(), attrs.urlString));
           }
         }
       }
@@ -241,6 +242,9 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
    * Directive that updates the style of the preview pane according
    * to the user's chosen theme/color preference.
    *
+   * In the following example, the style of the preview element is
+   * updated everytime the value of options.gridTheme changes.
+   *
    * <div id="preview" preview-style="options.gridTheme">...</div>
    */
   RendrItMod.directive('previewStyle', function() {
@@ -250,11 +254,11 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         scope.$watch(attrs.previewStyle, function() {
           element.removeClass().css('background-color', '');
           if (scope.options.gridTheme.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
-            $("#preview, #colour-swatch").css('background-color', scope.options.gridTheme);
-            $("#colour, #preview-bgcolour").val(scope.options.gridTheme);
-            $("#preview-bgcolour").attr("checked",true).closest('li').addClass('active');
+            angular.element("#preview, #colour-swatch").css('background-color', scope.options.gridTheme);
+            angular.element("#colour, #preview-bgcolour").val(scope.options.gridTheme);
+            angular.element("#preview-bgcolour").attr("checked",true).closest('li').addClass('active');
           } else {
-            $("#preview").addClass("right_panel " + scope.options.gridTheme);
+            angular.element("#preview").addClass("right_panel " + scope.options.gridTheme);
           }
         });
       }
@@ -273,8 +277,8 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
       require: '^ngModel',
       template: "<input type='radio' name='gridTheme' id='preview-bgcolour'/><label for='preview-bgcolour' id='colour-swatch'>Background color</label><input type='text' id='colour' class='radius'/><div id='colourpicker'></div>",
       link: function(scope, element, attrs, ngModel) {
-        var previewBgColour = $("#preview-bgcolour"),
-            colour = $("#colour");
+        var previewBgColour = angular.element("#preview-bgcolour"),
+            colour = angular.element("#colour");
 
         var picker = $.farbtastic("#colourpicker", {
           width: 120,
@@ -282,7 +286,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
           callback: function(color) {
             previewBgColour.val(color);
             colour.val(color);
-            $('#colour-swatch').css('background-color', color);
+            angular.element('#colour-swatch').css('background-color', color);
           }
         });
 
@@ -290,39 +294,39 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         picker.linkTo(function(color) {
           previewBgColour.val(color);
           colour.val(color);
-          $('#colour-swatch').css('background-color', color);
+          angular.element('#colour-swatch').css('background-color', color);
           ngModel.$setViewValue(color);
         });
 
-        $('#colour').keyup(function(){
-          var enteredcolour = $(this).val();
+        angular.element('#colour').keyup(function(){
+          var enteredcolour = angular.element(this).val();
           var isHexColour = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 
           picker.setColor(enteredcolour);
-          $(this).css('color', isHexColour.test(enteredcolour) ? '#404040' : '#f00');
+          angular.element(this).css('color', isHexColour.test(enteredcolour) ? '#404040' : '#f00');
         });
 
         // Focus Colourpicker by clicking on either label or field
-        $('#colour-swatch, #colour').click(function(){
+        angular.element('#colour-swatch, #colour').click(function(){
           previewBgColour.attr('checked', true);
-          $(this).closest('li').addClass('active');
-          $('#colourpicker').fadeIn();
+          angular.element(this).closest('li').addClass('active');
+          angular.element('#colourpicker').fadeIn();
           picker.setColor(previewBgColour.val());
         });
 
         // Hide colourpicker
-        $("body").click(function(){
-            $("#colourpicker").fadeOut().removeClass("active");
+        angular.element("body").click(function(){
+          angular.element("#colourpicker").fadeOut().removeClass("active");
         });
 
         // Prevent colourpicker from closing on related elements
-        $("#colourpicker, #colour, #colour-swatch, #preview-bgcolour").click(function(e) {
+        angular.element("#colourpicker, #colour, #colour-swatch, #preview-bgcolour").click(function(e) {
             e.stopPropagation();
         });
 
         // Remove colourpicker active class from list element
-        $('#options input[name=gridTheme]').change(function() {
-            $(this).closest('ul').children('li').removeClass('active');
+        angular.element('#options input[name=gridTheme]').change(function() {
+          angular.element(this).closest('ul').children('li').removeClass('active');
         });
       }
     };
@@ -352,8 +356,8 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
             scope.$broadcast("splitter.resize");
           }
         });
-        var cls = attrs.orientation === 'horizontal' ? '.hsplitter' : '.vsplitter';
-        $(cls).append("<span>...</span>");
+        angular.element(attrs.orientation === 'horizontal' ? '.hsplitter' : '.vsplitter')
+          .append("<span>...</span>");
       }
     };
   });
@@ -491,10 +495,11 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         $timeout(function() {
           // Enable Foundation Reveal elements that are in the iframe
           element.contents().find("a[data-reveal-id]").click(function(e) {
-            $('#' + $(this).attr("data-reveal-id")).reveal($(this).data());
+            var _this = angular.element(this);
+            angular.element('#' + _this.attr("data-reveal-id")).reveal(_this.data());
             return false;
           });
-        }, 400) 
+        }, 400);
 
       }
     };
@@ -521,7 +526,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         editor.setTheme("ace/theme/rendr");
         editor.getSession().setUseWorker(false);
         editor.getSession().setMode("ace/mode/" + attrs.mode);
-        //editor.setReadOnly(true);
+        editor.setReadOnly(true);
 
         ngModel.$setViewValue(editor.getSession().getValue());
         scope.app.content[attrs.property] = ngModel.$modelValue;
@@ -560,10 +565,10 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         element.append('<div class="title">' + attrs.id.toUpperCase() + '</div>');
 
         // Fade pane title on hover
-        $("#" + attrs.id).hoverIntent(function() {
-          $(this).find('.title').fadeOut('fast');
+        angular.element("#" + attrs.id).hoverIntent(function() {
+          angular.element(this).find('.title').fadeOut('fast');
         }, function() {
-          $(this).find('.title').fadeIn('fast');
+          angular.element(this).find('.title').fadeIn('fast');
         });
       }
     };
@@ -571,14 +576,14 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
 
   /** Services
    *
-   * The following services handle loading of library, rendr, and user options.
+   * The following services handle loading and saving of library, rendr, and user options.
    */
   RendrItMod.factory('Library', ["$http", function($http) {
     var Library = Object.create(null);
 
     Library.get = function(id, key) {
       return $http.get('/library/' + id, {params: {key: key}}).then(function(response) {
-        angular.extend(Library, response.data);
+        Library = angular.extend(Library, response.data);
         Library.key = key;
         return Library;
       }, function(response) {
@@ -587,11 +592,13 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
     };
 
     Library.save = function(name) {
-      return $http.post('/library/', $.param({name: name}), {headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}})
-        .then(function(response) {
-          angular.extend(Library, response.data);
-          return Library;
-        });
+      return $http.post('/library/', $.param({name: name}), {
+        headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
+      }).then(function(response) {
+        Library = angular.extend(Library, response.data);
+        Library.rendrs = Library.rendrs || [];
+        return Library;
+      });
     };
     return Library;
   }]);
@@ -600,7 +607,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
     var Rendr = Object.create(null);
     Rendr.get = function(libraryId, rendrId) {
       return $http.get('/' + libraryId + "/" + rendrId + ".json").then(function(response) {
-        angular.extend(Rendr, response.data);
+        Rendr = angular.extend(Rendr, response.data);
         return Rendr;
       });
     };
@@ -613,7 +620,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         testPath: testPath,
         testParams: testParams
       }).then(function(response) {
-        angular.extend(Rendr, response.data);
+        Rendr = angular.extend(Rendr, response.data);
         if (Library.rendrs.indexOf(response.data.rendrId) === -1) {
           Library.rendrs.push(response.data.rendrId);
         }
@@ -639,7 +646,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
     var Options = Object.create(null),
         defaults = {"theme": "theme-dark", "gridTheme": "preview-wood"};
 
-    angular.extend(Options, defaults);
+    Options = angular.extend(Options, defaults);
 
     Options.get = function() {
       Options.sync();
@@ -659,7 +666,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
       } else {
         options = JSON.parse(localStorage.options);
       }
-      angular.extend(Options, options);
+      Options = angular.extend(Options, options);
       return Options;
     };
 
@@ -680,7 +687,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         status: {width: '--', height: '--', filesize: '--', rendertime: '--'}
       },
       theme: {value: "theme-dark", grid: "preview-wood"},
-      newRendr: {contentSource: '', rendrId: ''},
+      newRendr: {contentSource: 'current', rendrId: ''},
       rendr: {body: '', css: '', testParams: '', testPath: ''}
     };
 
@@ -690,6 +697,12 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
     $scope.options = Options.get();
     $scope.app.theme.value = $scope.options.theme;
     $scope.app.theme.grid = $scope.options.gridTheme;
+
+    $scope.libraryName = function() {
+      if (!$scope.library || !$scope.library.key) { return "(No library loaded)";}
+
+      return $scope.library.name;
+    };
 
     $scope.saveOptions = function() {
       // This is unnecessary if we apply the theme instantly
@@ -706,12 +719,19 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
 
     $scope.loadRendr = function(rendrId) {
       $scope.inprogress = true;
+
       Rendr.get($scope.library.libraryId, rendrId)
         .then(function(rendr) {
           $scope.inprogress = false;
           $scope.app.rendr = rendr;
-          $scope.app.content.body = rendr.body;
-          $scope.app.content.css = rendr.css;
+
+          // This is a hack. If the loaded rendr content is the same
+          // as the default content, the editor stays read-only. The
+          // extra space forces ngModel to recognize a 'change' in the
+          // content, which sets the editor's read-only property to
+          // false, hence, writable.
+          $scope.app.content.body = rendr.body.trim() + " ";
+          $scope.app.content.css = rendr.css.trim() + " ";
         }, function() {
           $scope.inprogress = false;
           $scope.$broadcast("modal.open", "load-rendr-error");
@@ -735,10 +755,11 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         .then(function(rendr) {
           $scope.inprogress = false;
           $scope.app.rendr = rendr;
-          $scope.app.content.css = rendr.css;
-          $scope.app.content.body = rendr.body;
 
-          $scope.library = Library;
+          // See explanation in loadRendr() above.
+          $scope.app.content.css = rendr.css.trim() + " ";
+          $scope.app.content.body = rendr.body.trim() + " ";
+//          $scope.library = Library;
           $scope.$broadcast("modal.close", "new-rendr");
         }, function() {
           //$scope.app.rendr = null;
@@ -772,6 +793,9 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
     };
 
     $scope.previewRendered = function() {
+      // We can't preview a non-existent rendr
+      if (!$scope.app.rendr.rendrId) { return;}
+
       if ($scope.app.content.previewMode === "live") {
         $scope.app.content.previewMode = "rendered";
       }
@@ -801,5 +825,4 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
 
   }]);
 
-  // end angular
 })(jQuery);

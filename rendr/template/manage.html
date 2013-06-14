@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"> <!-- ng-app="RendrIt"-->
+<html lang="en">
 <head>
     <meta charset="utf-8" />
 
@@ -26,9 +26,7 @@
                 </div>
 
                 <div id="library-menu" class="button ctl radius dropdown disabled" ng-class="{'disabled': !library.key}">
-                                              
-                     
-                    <span class="library-name" ng-bind="library.name || '(No library loaded)'"></span>
+                    <span class="library-name" ng-bind="libraryName()" ></span>
                     <ul>
                       <li ng-repeat="rendr in library.rendrs" ng-class="{'disabled': inprogress, 'in-progress': inprogress}">
                         <a href="#" class="action" ng-click="loadRendr(rendr)" ng-bind="rendr"></a>
@@ -53,7 +51,7 @@
                       </a>
                     </li>
                     <li>
-                      <a href="#" ng-click="previewRendered()" ng-class="{'disabled': editorHasUnsavedChanges(), 'active': app.content.previewMode == 'rendered' && !editorHasUnsavedChanges()}"
+                      <a href="#" ng-click="previewRendered()" ng-class="{'disabled': editorHasUnsavedChanges() || !app.rendr.rendrId, 'active': app.content.previewMode == 'rendered' && !editorHasUnsavedChanges()}"
                          class="button ctl rendered btn-rendered-preview " tooltip="Image preview">
                         <span><i class="icon-picture"></i></span>
                       </a>
@@ -247,7 +245,7 @@ a {
 
             <form>
                 Create with:
-                <label><input ng-model="app.newRendr.contentSource" type="radio" value="current" checked="checked" /> Current content</label>
+                <label><input ng-model="app.newRendr.contentSource" type="radio" value="current" /> Current content</label>
                 <label><input ng-model="app.newRendr.contentSource" type="radio" value="empty" /> Empty content</label>
             </form>
 
