@@ -551,7 +551,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
               ngModel.$setViewValue(editor.getSession().getValue());
               // Switch to live view if code has changed
               if (scope.app.content.previewMode === 'rendered') {
-                scope.app.content.previewMode = 'live';
+                scope.app.content.previewMode = 'live';   
               }
             });
           }
@@ -578,9 +578,22 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
    *
    * The following services handle loading and saving of library, rendr, and user options.
    */
+
+  /** Library Service
+   *
+   * Provides a service for retrieving existing libraries, and storing
+   * a new library.
+   */
   RendrItMod.factory('Library', ["$http", function($http) {
     var Library = Object.create(null);
+    Library.rendrs = [];
 
+    /** Get library
+     *
+     * Retrieves a library with a specific id and key.
+     *
+     * Returns a Future object (HttpPromise)
+     */
     Library.get = function(id, key) {
       return $http.get('/library/' + id, {params: {key: key}}).then(function(response) {
         Library = angular.extend(Library, response.data);
@@ -591,20 +604,49 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
       });
     };
 
+    /** Save library
+     *
+     * Stores the library with the given name.
+     *
+     * Returns a Future object (HttpPromise)
+     */ 
     Library.save = function(name) {
       return $http.post('/library/', $.param({name: name}), {
         headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
       }).then(function(response) {
         Library = angular.extend(Library, response.data);
-        Library.rendrs = Library.rendrs || [];
         return Library;
       });
     };
+
+
+    /** Add rendr ID
+     *
+     * Add the given rendr ID to the rendrs in the library.
+     */
+    Library.addRendrId = function(rendrId) {
+      if (Library.rendrs.indexOf(rendrId) === -1) {
+        Library.rendrs.push(rendrId);
+      }
+    };
+
     return Library;
   }]);
 
+
+  /** Rendr Service
+   *
+   * Provides a service for managing rendrs.
+   */
   RendrItMod.factory('Rendr', ["$http", "Library",  function($http, Library) {
     var Rendr = Object.create(null);
+    
+    /** Get rendr
+     *
+     * Retrieves a rendr from a library
+     *
+     * Returns a Future object
+     */
     Rendr.get = function(libraryId, rendrId) {
       return $http.get('/' + libraryId + "/" + rendrId + ".json").then(function(response) {
         Rendr = angular.extend(Rendr, response.data);
@@ -612,6 +654,10 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
       });
     };
 
+    /** Save rendr
+     *
+     * Returns a Future object
+     */
     Rendr.save = function(libraryId, libraryKey, rendrId, css, html, testPath, testParams) {
       return $http.put('/rendr/' + libraryId + "/" + rendrId, {
         libraryKey: libraryKey,
@@ -621,9 +667,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         testParams: testParams
       }).then(function(response) {
         Rendr = angular.extend(Rendr, response.data);
-        if (Library.rendrs.indexOf(response.data.rendrId) === -1) {
-          Library.rendrs.push(response.data.rendrId);
-        }
+        Library.addRendrId(response.data.rendrId);
         return Rendr;
       });
     };
@@ -649,22 +693,23 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
     Options = angular.extend(Options, defaults);
 
     Options.get = function() {
-      Options.sync();
+      Options._sync();
       return Options;
     };
 
     Options.save = function(options) {
       if (!options) { return;}
-      localStorage.options = JSON.stringify(options);
-      Options.sync();
+      localStorage.setItem('options', JSON.stringify(options));
+      Options._sync();
+      return Options;
     };
 
-    Options.sync = function() {
-      var options = localStorage.options;
+    Options._sync = function() {
+      var options = window.localStorage.getItem('options');
       if (!options) {
         options = defaults;
       } else {
-        options = JSON.parse(localStorage.options);
+        options = JSON.parse(localStorage.getItem('options'));
       }
       Options = angular.extend(Options, options);
       return Options;
@@ -732,6 +777,8 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
           // false, hence, writable.
           $scope.app.content.body = rendr.body.trim() + " ";
           $scope.app.content.css = rendr.css.trim() + " ";
+
+          $scope.app.content.hasChanged = false;
         }, function() {
           $scope.inprogress = false;
           $scope.$broadcast("modal.open", "load-rendr-error");
@@ -759,10 +806,8 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
           // See explanation in loadRendr() above.
           $scope.app.content.css = rendr.css.trim() + " ";
           $scope.app.content.body = rendr.body.trim() + " ";
-//          $scope.library = Library;
           $scope.$broadcast("modal.close", "new-rendr");
         }, function() {
-          //$scope.app.rendr = null;
           $scope.inprogress = false;
         });
     };
@@ -771,9 +816,9 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
       if (!$scope.editorHasUnsavedChanges()) { return;}         
       $scope.inprogress = true;
 
-      Rendr.save(Library.libraryId, Library.key, Rendr.rendrId,
+      Rendr.save($scope.library.libraryId, $scope.library.key, $scope.app.rendr.rendrId,
                  $scope.app.content.css, $scope.app.content.body,
-                 Rendr.testPath, Rendr.testParams)
+                 $scope.app.rendr.testPath, $scope.app.rendr.testParams)
         .then(function(rendr) {
           $scope.inprogress = false;
           $scope.app.rendr = rendr;
