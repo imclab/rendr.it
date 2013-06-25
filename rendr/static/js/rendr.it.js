@@ -30,40 +30,41 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
 });
 
 (function($) {
+  "use strict";
 
-    // From http://stackoverflow.com/questions/985272/jquery-selecting-text-in-an-element-akin-to-highlighting-with-your-mouse/987376#987376
-    function selectText(element) {
-        var doc = document, range, selection;
-        if (doc.body.createTextRange) { //ms
-            range = doc.body.createTextRange();
-            range.moveToElementText(element);
-            range.select();
-        } else if (window.getSelection) { //all others
-            selection = window.getSelection();
-            range = doc.createRange();
-            range.selectNodeContents(element);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
+  // From http://stackoverflow.com/questions/985272/jquery-selecting-text-in-an-element-akin-to-highlighting-with-your-mouse/987376#987376
+  function selectText(element) {
+    var doc = document, range, selection;
+    if (doc.body.createTextRange) { //ms
+      range = doc.body.createTextRange();
+      range.moveToElementText(element);
+      range.select();
+    } else if (window.getSelection) { //all others
+      selection = window.getSelection();
+      range = doc.createRange();
+      range.selectNodeContents(element);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
+  }
 
-    // Return str + ch if str does not end in ch, or str otherwise
-    function stringWithLastChar(str, ch) {
-        if (str.charAt(str.length - 1) != ch) {
-            return str + ch;
-        } else {
-            return str;
-        }
+  // Return str + ch if str does not end in ch, or str otherwise
+  function stringWithLastChar(str, ch) {
+    if (str.charAt(str.length - 1) != ch) {
+      return str + ch;
+    } else {
+      return str;
     }
+  }
 
-    // Return str[0:-1] if str ends in ch, or str otherwise
-    function stringWithoutLastChar(str, ch) {
-        if (str.charAt(str.length - 1) == ch) {
-            return str.slice(0, -1);
-        } else {
-            return str;
-        }
+  // Return str[0:-1] if str ends in ch, or str otherwise
+  function stringWithoutLastChar(str, ch) {
+    if (str.charAt(str.length - 1) == ch) {
+      return str.slice(0, -1);
+    } else {
+      return str;
     }
+  }
 
   angular.element(document).ready(function() {
     /*
@@ -205,6 +206,8 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
    * notifies listeners to update the (live) preview content.
    *
    * <span class="paramString" url-string="/"...></span>
+   *
+   * .. or <span class="queryString" url-string="?" ..></span>
    */
   RendrItMod.directive('urlString', function() {
     return {
@@ -215,14 +218,17 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
       link: function(scope, element, attrs, ngModel) {
         if (!ngModel) { return;}
 
+        // The model was update, push the value into the view.
         ngModel.$render = function() {
           if (element.text() === ngModel.$viewValue) { return;}
           element.text(ngModel.$viewValue || "");
+          updateText(ngModel.$viewValue || "");
         };
 
         element.bind('textchange', $.debounce(function() {
-          updateText(element.text());
-          ngModel.$setViewValue(element.text());
+          var text = element.text();
+          updateText(text);
+          ngModel.$setViewValue(text);
           scope.$broadcast("rendrUrlStringChanged");
         }, 400));
 
@@ -254,11 +260,12 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         scope.$watch(attrs.previewStyle, function() {
           element.removeClass().css('background-color', '');
           if (scope.options.gridTheme.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
-            angular.element("#preview, #colour-swatch").css('background-color', scope.options.gridTheme);
+            element.css('background-color', scope.options.gridTheme);
+            angular.element("#colour-swatch").css('background-color', scope.options.gridTheme);
             angular.element("#colour, #preview-bgcolour").val(scope.options.gridTheme);
             angular.element("#preview-bgcolour").attr("checked",true).closest('li').addClass('active');
           } else {
-            angular.element("#preview").addClass("right_panel " + scope.options.gridTheme);
+            element.attr("class", "right_panel " + scope.options.gridTheme);
           }
         });
       }

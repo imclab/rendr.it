@@ -2,6 +2,69 @@ describe("Rendr.it", function() {
   // Initialize RendrIt module before each  test
   beforeEach(module('RendrIt'));
 
+  // Directives unit tests
+  describe("Directive", function() {
+    var $compile,
+        $timeout,
+        $rootScope;
+
+    beforeEach(inject(function(_$compile_, _$rootScope_, _$timeout_) {
+      $compile = _$compile_;
+      $timeout = _$timeout_;
+      $rootScope = _$rootScope_;
+    }));
+
+    describe("urlString", function() {
+      var elm;
+
+      beforeEach(function() {
+        elm = angular.element(
+          "<span>.png</span><span class='queryString' ng-model='testmodel' url-string='?'></span>"
+        );
+        $compile(elm)($rootScope);
+        $rootScope.$digest();
+      });
+      
+      it("should update string after model changes", function() {
+        expect(elm.text()).toBe('.png');
+        $rootScope.testmodel = "width=300";
+        $rootScope.$digest();
+        expect(elm.text()).toBe('.png?width=300');
+      });
+    });
+
+    describe("previewStyle", function() {
+      var elm;
+
+      beforeEach(function() {
+        elm = angular.element(
+          "<div id='preview' class='preview' preview-style='options.gridTheme'>...</div>" +
+            "<div id='colour'></div>" +
+            "<div id='preview-bgcolour'></div>" +
+            "<div id='colour-swatch'></div>"
+        );
+        $rootScope.options = {theme: '', gridTheme: ''};
+        elm = $compile(elm)($rootScope);
+        $rootScope.$digest();
+      });
+
+      it("should be able to change preview pane's class", function() {
+        expect(elm.eq(0).attr("class")).toBe("right_panel ");
+        $rootScope.options.gridTheme = "preview-wood";
+        $rootScope.$digest();
+        expect(elm.eq(0).attr("class")).toBe("right_panel preview-wood");
+      });
+
+      it("should be able to change preview pane's background-color if theme is user defined", function() {
+        expect(elm.eq(0).css("background-color")).toBe("");
+        $rootScope.options.gridTheme = "#808090";
+        $rootScope.$digest();
+        expect(elm.eq(0).css("background-color")).toBe("rgb(128, 128, 144)");
+      });
+    });
+  });
+
+
   // Library service unit tests
   describe("Library Service", function() {
     var service, $httpBackend, $rootScope;
