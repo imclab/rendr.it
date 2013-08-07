@@ -59,6 +59,13 @@ Testing
     AWS_ACCESS_KEY_ID="..." AWS_SECRET_ACCESS_KEY="..." python -m tornado.testing rendr.test.asyncs3
 
 
+Unit Testing
+------------
+
+    npm install -g karma
+    karma start rendr/test/client/karma.conf.js
+
+
 Licence
 -------
 

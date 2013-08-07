@@ -1503,3 +1503,7 @@ TOOLTIPS
     border-bottom-color: transparent;
 }
 
+/* Avoid FOUC while angular compiles the template */
+[ng-cloak] {
+   display: none;
+}
