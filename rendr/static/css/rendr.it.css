@@ -1129,7 +1129,13 @@ a.button.postfix {
     letter-spacing: -1px;
 }
 
-.reveal-modal p {
+.reveal-modal ul ul,
+.reveal-modal ul ol {
+    margin-left: 15px;
+}
+
+.reveal-modal p,
+.reveal-modal li {
     font-size: 12px;
 }
 
