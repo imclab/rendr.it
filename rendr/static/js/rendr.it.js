@@ -21,13 +21,14 @@ SOFTWARE.
 */
 
 // Initialize angularJS rendr.it module
-var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvider) {
+var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', function($interpolateProvider) {
   // Modify the interpolation symbol so as not to clash with Mustache templates
   // FIXME perhaps check if we can switch from Mustache to AngularJS
   // for rendr url query string interpolation?
   $interpolateProvider.startSymbol('((');
   $interpolateProvider.endSymbol('))');
-});
+}]);
+
 
 (function($) {
   "use strict";
@@ -64,6 +65,18 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
     } else {
       return str;
     }
+  }
+
+
+  // Convert a query string to a list of parameters
+  function parseQuery(query) {
+    var params = {},
+        pairs = query.substring(1).split('&'), p, i;
+    for (i = 0; i < pairs.length; i++) {
+      p = pairs[i].split('=');
+      params[decodeURIComponent(p[0])] = decodeURIComponent(p[1]);
+    }
+    return params;
   }
 
   angular.element(document).ready(function() {
@@ -375,7 +388,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
    *
    * <preview body="..." css="..." mode="...">...</preview> 
    */
-  RendrItMod.directive('preview', function($timeout, Rendr) {
+  RendrItMod.directive('preview', ['$timeout', function($timeout, Rendr) {
     return {
       restrict: 'E',
       template: "<iframe ng-transclude style='width:0;height:0'></iframe>",
@@ -414,7 +427,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
                 doc = element.contents()[0],
                 qs = scope.app.rendr.testParams,
                 params = scope.app.rendr.testPath,
-                data = Rendr.parseQuery("?" + qs),
+                data = parseQuery("?" + qs),
                 content;
 
             data.params = (params || '').split('/');
@@ -510,7 +523,7 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
 
       }
     };
-  });
+  }]);
 
   /** editor
    *
@@ -677,17 +690,6 @@ var RendrItMod = angular.module('RendrIt', []).config(function($interpolateProvi
         Library.addRendrId(response.data.rendrId);
         return Rendr;
       });
-    };
-
-    // Convert a query string to a list of parameters
-    Rendr.parseQuery = function(query) {
-      var params = {},
-          pairs = query.substring(1).split('&'), p, i;
-      for (i = 0; i < pairs.length; i++) {
-        p = pairs[i].split('=');
-        params[decodeURIComponent(p[0])] = decodeURIComponent(p[1]);
-      }
-      return params;
     };
 
     return Rendr;
