@@ -56,7 +56,7 @@ describe("Rendr.it", function() {
       });
 
       it("should be able to change preview pane's background-color if theme is user defined", function() {
-        expect(elm.eq(0).css("background-color")).toBe("");
+        expect(elm.eq(0).css("background-color")).toBe("transparent");
         $rootScope.options.gridTheme = "#808090";
         $rootScope.$digest();
         expect(elm.eq(0).css("background-color")).toBe("rgb(128, 128, 144)");

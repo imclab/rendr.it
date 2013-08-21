@@ -271,7 +271,11 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
       restrict: 'A',
       link: function(scope, element, attrs) {
         scope.$watch(attrs.previewStyle, function() {
-          element.removeClass().css('background-color', '');
+          // Set element to 'transparent'. When set to an empty
+          // string, FF sets this to 'transparent' but Chrome sets
+          // this to '' which fails the unit test. FF follows the spec
+          // in this regard - http://www.w3.org/TR/CSS2/colors.html#background-properties
+          element.removeClass().css('background-color', 'transparent');
           if (scope.options.gridTheme.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
             element.css('background-color', scope.options.gridTheme);
             angular.element("#colour-swatch").css('background-color', scope.options.gridTheme);
