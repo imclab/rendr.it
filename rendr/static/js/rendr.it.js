@@ -451,7 +451,8 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
             );
 
             element.load(function() {
-              var body = element.contents().find("html"),
+              var c = element.contents()[0],
+                  body = angular.element(c),
                   w = body.width(),
                   h = body.height();
 
