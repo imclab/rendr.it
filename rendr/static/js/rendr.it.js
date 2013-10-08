@@ -746,7 +746,9 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
       },
       theme: {value: "theme-dark", grid: "preview-wood"},
       newRendr: {contentSource: 'current', rendrId: ''},
-      rendr: {body: '', css: '', testParams: '', testPath: ''}
+      rendr: {body: '', css: '', testParams: '', testPath: ''},
+      testPath: "",
+      testParams: ""
     };
 
     // Load / Initialize options
