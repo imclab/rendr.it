@@ -450,6 +450,8 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
                 }
             );
 
+            // Clear the dimensions before assigning a new one
+            element.css({width: "", height: ""});
             element.load(function() {
               var c = element.contents()[0],
                   body = angular.element(c),
@@ -463,11 +465,15 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
                 "margin-top": '-' + Math.round(h / 2) + "px"
               });
 
-              scope.app.content.status.width = w;
-              scope.app.content.status.height = h;
-              scope.app.content.status.filesize = "?";
-              scope.app.content.status.rendertime = "" + ((new Date()).valueOf() - startTs.valueOf()) / 1000.0;
-            });
+
+              scope.$apply(function() {
+                // Force a digest cycle to make Firefox happy
+                scope.app.content.status.width = w;
+                scope.app.content.status.height = h;
+                scope.app.content.status.filesize = "?";
+                scope.app.content.status.rendertime = "" + ((new Date()).valueOf() - startTs.valueOf()) / 1000.0;
+              });
+          });
 
             doc.open();
             doc.write(content);
