@@ -437,7 +437,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
             data.params = (params || '').split('/');
 
             content = Mustache.render(
-              "<html><head><style>{{{css}}}</style>" +
+              "<!DOCTYPE html><html><head><style>{{{css}}}</style>" +
                 "<script>query = {{{query}}};window.decodeBase64UrlSafe" +
                 " = function (s) { s = s.replace(/-/g, '+').replace(" +
                 "/_/g, '/'); return decodeURIComponent(escape(atob(s " +
