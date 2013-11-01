@@ -345,6 +345,7 @@ class Renderer(tornado.web.RequestHandler):
             elif format == "html":
                 self.set_header("Content-Type", "text/html")
                 self.write(pystache.render("""
+                    <!DOCTYPE html>
                     <html>
                         <head>
                             <style>{{{css}}}</style>
