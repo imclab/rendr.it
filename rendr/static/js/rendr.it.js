@@ -516,7 +516,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
             });
 
             doc.open();
-            doc.write("<html><head></head><body style='margin:0;pading:" +
+            doc.write("<html><head></head><body style='margin:0;padding:" +
                       "0;overflow:hidden'><img src='" + url +
                       "' style='display:block' /></body></html>");
             doc.close();
