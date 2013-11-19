@@ -12820,7 +12820,7 @@ var Text = function(parentEl) {
             style.overflow = "visible";
             style.whiteSpace = "nowrap";
 
-            measureNode.innerHTML = "X";
+            measureNode.innerHTML = lang.stringRepeat("X", 1024);
 
             var container = this.element.parentNode;
             while (container && !dom.hasCssClass(container, "ace_editor"))
@@ -12836,7 +12836,7 @@ var Text = function(parentEl) {
 
         var size = {
             height: rect.height,
-            width: rect.width
+            width: rect.width / 1024
         };
         if (size.width == 0 || size.height == 0)
             return null;
