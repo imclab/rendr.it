@@ -365,12 +365,16 @@ describe("Rendr.it", function() {
           libraryId: "libdid2",
           rendrId: "rendrid2",
           testParams: "name=bar",
-          testPath: ""
+          testPath: "pathOne"
         });
 
       spyOn(RendrSrv, "save").andCallThrough();
       scope.library = {libraryId: "libid2", key: "dffdfd"};
       scope.app.newRendr.rendrId = "rendrid2";
+      scope.app.content.body = "<div><p>my name is {{name}}</p></div> ";
+      scope.app.content.css = "p { font-size: large; } ";
+      scope.app.rendr.testParams = "name=bar";
+      scope.app.rendr.testPath = "pathOne";
       scope.$on("modal-close", function(_, args) {
         expect(args).toBe("new-rendr");
       });
@@ -379,11 +383,19 @@ describe("Rendr.it", function() {
       expect(scope.inprogress).toBeTruthy();
       scope.$root.$digest();
       $httpBackend.flush();
+      expect(RendrSrv.save).toHaveBeenCalledWith(
+        scope.library.libraryId,
+        scope.library.key,
+        scope.app.rendr.rendrId,
+        scope.app.content.css,
+        scope.app.content.body,
+        scope.app.rendr.testPath,
+        scope.app.rendr.testParams
+      );
       expect(scope.inprogress).toBeFalsy();
       expect(scope.app.content.body).toBe("<div><p>my name is {{name}}</p></div> ");
       expect(scope.app.content.css).toBe("p { font-size: large; } ");
       expect(scope.app.rendr.testParams).toBe("name=bar");
-      expect(RendrSrv.save).toHaveBeenCalled();
     });
 
     it("should be able to create a new rendr with empty content", function() {
