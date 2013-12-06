@@ -820,7 +820,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
       }
 
       Rendr.save($scope.library.libraryId, $scope.library.key, $scope.app.newRendr.rendrId, css, html,
-                 $scope.app.rendr.testParams, $scope.app.rendr.testPath)
+                 $scope.app.rendr.testPath, $scope.app.rendr.testParams)
         .then(function(rendr) {
           $scope.inprogress = false;
           $scope.app.rendr = rendr;
