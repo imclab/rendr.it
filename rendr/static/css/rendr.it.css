@@ -82,6 +82,11 @@ header #preview-ctl {
     vertical-align: top;
 }
 
+header #preview-ctl {
+    position: absolute;
+    right: 0;
+}
+
 header #rendr-title {
     display: inline-block;
     font-size: 12px;
@@ -1050,12 +1055,32 @@ header .button-group .button {
     color: #1e1e1e;
     padding: 0;
     margin: 5px 4px 0 0;
-    height: 30px;
+    min-height: 30px;
     float: left;
     -webkit-border-radius: 3px;
     -moz-border-radius: 3px;
     border-radius: 3px;
+    max-width: 450px;
     background: #fefefe;
+    overflow: auto;
+    white-space: nowrap;
+}
+
+#preview-ctl ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+ 
+#preview-ctl ::-webkit-scrollbar-track {
+    background: none;
+}
+
+#preview-ctl ::-webkit-scrollbar-thumb {
+    margin-top: 2px;
+    background: rgba(0,174,239,0.8);
+    -webkit-border-radius: 6px;
+    -moz-border-radius: 6px;
+    border-radius: 6px;
 }
 
 .theme-dark #url-input {

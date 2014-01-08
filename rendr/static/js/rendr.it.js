@@ -437,7 +437,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
             data.params = (params || '').split('/');
 
             content = Mustache.render(
-              "<html><head><style>{{{css}}}</style>" +
+              "<!DOCTYPE html><html><head><style>{{{css}}}</style>" +
                 "<script>query = {{{query}}};window.decodeBase64UrlSafe" +
                 " = function (s) { s = s.replace(/-/g, '+').replace(" +
                 "/_/g, '/'); return decodeURIComponent(escape(atob(s " +
@@ -516,7 +516,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
             });
 
             doc.open();
-            doc.write("<html><head></head><body style='margin:0;pading:" +
+            doc.write("<html><head></head><body style='margin:0;padding:" +
                       "0;overflow:hidden'><img src='" + url +
                       "' style='display:block' /></body></html>");
             doc.close();
@@ -820,7 +820,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
       }
 
       Rendr.save($scope.library.libraryId, $scope.library.key, $scope.app.newRendr.rendrId, css, html,
-                 $scope.app.rendr.testParams, $scope.app.rendr.testPath)
+                 $scope.app.rendr.testPath, $scope.app.rendr.testParams)
         .then(function(rendr) {
           $scope.inprogress = false;
           $scope.app.rendr = rendr;
