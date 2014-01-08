@@ -184,7 +184,7 @@ a {
             and Secret Key, and try again.</p>
             <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
         </div>
-        
+
         <div class="success" ng-show="!inprogress && library.key">
             <h2><i class="icon-ok-sign"></i> Library Loaded</h2>
             <p class="lead">You have sucessfully loaded your library.</p>
@@ -273,7 +273,7 @@ a {
         <a class="close-reveal-modal"><i class="icon-remove-sign"></i></a>
     </div>
 
-    <div id="options" class="reveal-modal small" ng-transclude modal-dialog> 
+    <div id="options" class="reveal-modal small" ng-transclude modal-dialog>
         <h2>Options</h2>
 
         <form>
@@ -318,15 +318,15 @@ a {
                 <p>Rendr.it enables you to create images based on HTML, CSS and JavaScript snippets, as well as externally-hosted scripts or images. The final image can be customised via URL parameters or query strings.</p>
 
                 <h5>The TL;DR guide to Rendr.it</h5>
-                
+
                 <ul>
                     <li><b>Create a new Library:</b> Just select <kbd>New Library...</kbd> under the Rendr.it menu to create a new one.</li>
                     <li><b>To edit/create a Rendr:</b> Create a new Rendr, hit the <kbd>New</kbd> button in the menu bar and start coding.</li>
                     <li><b>To use your Rendr:</b> Just copy and paste your Rendr's URL from the address bar on the right of the menu bar (see below about publishing using a CDN).</li>
                 </ul>
-                
+
                 <h5>Libraries</h5>
-                
+
                 <p>You'll need to create a new library to store your rendrs. Just select <br /><kbd>New Library...</kbd> under the Rendr.it menu to create one.</p>
                 <p>You can open an existing library by selecting <kbd>Open Library...</kbd> under the Rendr.it menu. It will require your Library ID and Secret Key.</p>
 
@@ -368,6 +368,20 @@ a {
     <!-- Included body assets -->
     {% for f in environment['body_js'] %}
         <script src="{{ f }}"></script>
+    {% end %}
+
+    <!-- Include pre-loaded data if present -->
+    {% if data %}
+    <script>
+    $(window).load(function() {
+        rendr.viewState.library = {% raw data["library"] %};
+        rendr.viewState.rendr = {% raw data["rendr"] %};
+        history.replaceState(null, "", window.location.href.split("?")[0]);
+
+        rendr.viewState.library.key = "{{ data["key"] }}";
+        rendr.updateLibraryMenu();
+    });
+    </script>
     {% end %}
 </body>
 </html>

@@ -109,7 +109,44 @@ def delete_files(folder, max, lifetime):
                     return
 
 
-class LibraryManager(tornado.web.RequestHandler):
+class UI(tornado.web.RequestHandler):
+    _cache_time = 1800  # 30 minutes
+
+    def initialize(self, environment=None):
+        self.environment = environment
+
+    # Stupid override to stop Tornado removing whitespace from the template
+    def create_template_loader(self, template_path):
+        if "template_loader" in self.application.settings:
+            return self.application.settings["template_loader"]
+
+        opts = {}
+        if "autoescape" in self.application.settings:
+            opts["autoescape"] = self.application.settings["autoescape"]
+
+        class Loader(tornado.template.Loader):
+            def _create_template(self, name):
+                with open(os.path.join(self.root, name), "rb") as f:
+                    template = tornado.template.Template(f.read(), name=name,
+                        loader=self, compress_whitespace=False)
+                return template
+
+        return Loader(template_path, **opts)
+
+    def get(self, rendr_id=None):
+        if self.request.headers.get("x-forwarded-proto") == "http":
+            self.redirect("https://%s/" % self.request.host)
+        else:
+            self.set_header("Date", datetime.datetime.utcnow())
+            self.set_header("Vary", "Accept-Encoding")
+            self.set_header("Expires", datetime.datetime.utcnow() +
+                datetime.timedelta(seconds=UI._cache_time))
+            self.set_header("Cache-Control", "public, max-age=" +
+                str(UI._cache_time))
+            self.render("manage.html", environment=self.environment)
+
+
+class LibraryManager(UI):
     def initialize(self, db=None):
         self.db = db
 
@@ -138,11 +175,21 @@ class LibraryManager(tornado.web.RequestHandler):
 
         result = yield gen.Task(self.db.read_library, library_id)
         if not result or "error" in result:
-            raise tornado.web.HTTPError(404)
+            # If a UI view, redirect to the homepage
+            if "json" not in self.request.headers.get("Accept"):
+                self.redirect("/")
+                return
+            else:
+                raise tornado.web.HTTPError(404)
 
         # Validate the library against the library key hash
         if not asyncs3.pwd_context.verify(library_key, result["keyHash"]):
-            raise tornado.web.HTTPError(403)
+            # If a UI view, redirect to the homepage
+            if "json" not in self.request.headers.get("Accept"):
+                self.redirect("/")
+                return
+            else:
+                raise tornado.web.HTTPError(403)
 
         # Retrieve the rendrs for this library
         rendrs = yield gen.Task(self.db.list_rendrs, library_id)
@@ -152,12 +199,22 @@ class LibraryManager(tornado.web.RequestHandler):
         del result["keyHash"]
         result["rendrs"] = rendrs
 
-        self.set_header("Content-Type", "application/json")
-        self.write(result)
-        self.finish()
+        if "json" not in self.request.headers.get("Accept"):
+            super(LibraryManager, self).get(data={
+                # Since this will be inserted inside a <script> tag, don't
+                # do the regular XHTML escaping
+                "library": json.dumps(result).replace('<', '\\x3c'),
+                "rendr": "null",
+                "key": library_key
+            })
+        else:
+            self.set_header("Content-Type", "application/json")
+            self.set_header("Access-Control-Allow-Origin", "*")
+            self.write(result)
+            self.finish()
 
 
-class RendrManager(tornado.web.RequestHandler):
+class RendrManager(UI):
     """APIs to work work rendr objects."""
     def initialize(self, db=None):
         self.db = db
@@ -369,43 +426,6 @@ class Renderer(tornado.web.RequestHandler):
             self.finish()
         else:
             raise tornado.web.HTTPError(400)
-
-
-class UI(tornado.web.RequestHandler):
-    _cache_time = 1800  # 30 minutes
-
-    def initialize(self, environment=None):
-        self.environment = environment
-
-    # Stupid override to stop Tornado removing whitespace from the template
-    def create_template_loader(self, template_path):
-        if "template_loader" in self.application.settings:
-            return self.application.settings["template_loader"]
-
-        opts = {}
-        if "autoescape" in self.application.settings:
-            opts["autoescape"] = self.application.settings["autoescape"]
-
-        class Loader(tornado.template.Loader):
-            def _create_template(self, name):
-                with open(os.path.join(self.root, name), "rb") as f:
-                    template = tornado.template.Template(f.read(), name=name,
-                        loader=self, compress_whitespace=False)
-                return template
-
-        return Loader(template_path, **opts)
-
-    def get(self, rendr_id=None):
-        if self.request.headers.get("x-forwarded-proto") == "http":
-            self.redirect("https://%s/" % self.request.host)
-        else:
-            self.set_header("Date", datetime.datetime.utcnow())
-            self.set_header("Vary", "Accept-Encoding")
-            self.set_header("Expires", datetime.datetime.utcnow() +
-                datetime.timedelta(seconds=UI._cache_time))
-            self.set_header("Cache-Control", "public, max-age=" +
-                str(UI._cache_time))
-            self.render("manage.html", environment=self.environment)
 
 
 class StaticBuild(tornado.web.RequestHandler):
