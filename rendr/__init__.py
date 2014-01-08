@@ -133,21 +133,27 @@ class UI(tornado.web.RequestHandler):
 
         return Loader(template_path, **opts)
 
-    def get(self, rendr_id=None):
+    def get(self, rendr_id=None, data=None):
         if self.request.headers.get("x-forwarded-proto") == "http":
             self.redirect("https://%s/" % self.request.host)
         else:
             self.set_header("Date", datetime.datetime.utcnow())
             self.set_header("Vary", "Accept-Encoding")
-            self.set_header("Expires", datetime.datetime.utcnow() +
-                datetime.timedelta(seconds=UI._cache_time))
-            self.set_header("Cache-Control", "public, max-age=" +
-                str(UI._cache_time))
-            self.render("manage.html", environment=self.environment)
+            if not data:  # Don't cache pages with data pre-loaded
+                self.set_header("Cache-Control", "public, max-age=" +
+                    str(UI._cache_time))
+                self.set_header("Expires", datetime.datetime.utcnow() +
+                    datetime.timedelta(seconds=UI._cache_time))
+            else:
+                self.set_header("Cache-Control", "no-cache")
+
+            self.render("manage.html", environment=self.environment,
+                data=data)
 
 
 class LibraryManager(UI):
-    def initialize(self, db=None):
+    def initialize(self, db=None, environment=None):
+        super(LibraryManager, self).initialize(environment=environment)
         self.db = db
 
     @tornado.web.asynchronous
@@ -216,7 +222,8 @@ class LibraryManager(UI):
 
 class RendrManager(UI):
     """APIs to work work rendr objects."""
-    def initialize(self, db=None):
+    def initialize(self, db=None, environment=None):
+        super(RendrManager, self).initialize(environment=environment)
         self.db = db
 
     @tornado.web.asynchronous

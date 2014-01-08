@@ -158,10 +158,10 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
     });
   });
 
-  /** Directives 
+  /** Directives
    *
    * Most of these directives 'wrap' the DOM manipulations required by
-   * rendr.it. 
+   * rendr.it.
    *
    * If you need to do DOM manipulation, write a directive and put
    * them here.
@@ -188,7 +188,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
   });
 
   /** modal-dialog
-   * 
+   *
    * Handles opening or closing of some Foundation Reveal dialogs in rendr.it.
    *
    * <div id="new-rendr" class="reveal-modal small" modal-dialog ng-transclude>...</div>
@@ -390,7 +390,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
    *
    * Handles updates to the content preview, live or otherwise.
    *
-   * <preview body="..." css="..." mode="...">...</preview> 
+   * <preview body="..." css="..." mode="...">...</preview>
    */
   RendrItMod.directive('preview', ['$timeout', function($timeout, Rendr) {
     return {
@@ -478,7 +478,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
             doc.open();
             doc.write(content);
             doc.close();
-            
+
           }, 1);
         }
 
@@ -582,7 +582,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
               ngModel.$setViewValue(editor.getSession().getValue());
               // Switch to live view if code has changed
               if (scope.app.content.previewMode === 'rendered') {
-                scope.app.content.previewMode = 'live';   
+                scope.app.content.previewMode = 'live';
               }
             });
           }
@@ -590,7 +590,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
           scope.app.content.hasChanged = scope.app.rendr[attrs.property] !== ngModel.$modelValue;
 
         }, 250);
-        
+
         // Re-render on each editor/query string change, at most 4x per sec
         editor.getSession().on('change', debounceCodeChange);
         element.append('<div class="title">' + attrs.id.toUpperCase() + '</div>');
@@ -619,6 +619,18 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
     var Library = Object.create(null);
     Library.rendrs = [];
 
+    /** Library from data
+     *
+     * Given a library object, creates a new library
+     *
+     * Returns the Library.
+     */
+    Library.fromData = function(data, key) {
+      Library = angular.extend(Library, data);
+      Library.key = key;
+      return Library;
+    };
+
     /** Get library
      *
      * Retrieves a library with a specific id and key.
@@ -640,7 +652,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
      * Stores the library with the given name.
      *
      * Returns a Future object (HttpPromise)
-     */ 
+     */
     Library.save = function(name) {
       return $http.post('/library/', $.param({name: name}), {
         headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
@@ -671,7 +683,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
    */
   RendrItMod.factory('Rendr', ["$http", "Library",  function($http, Library) {
     var Rendr = Object.create(null);
-    
+
     /** Get rendr
      *
      * Retrieves a rendr from a library
@@ -758,6 +770,13 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
       testParams: ""
     };
 
+    if (window.rendrLibrary) {
+      window.setTimeout(function() {
+        $scope.library =
+          Library.fromData(window.rendrLibrary, window.rendrKey);
+      }, 50);
+    }
+
     // Load / Initialize options
     // scope.options is the user's saved theme;
     // app.theme is the options view's model
@@ -835,7 +854,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
     };
 
     $scope.saveRendr = function() {
-      if (!$scope.editorHasUnsavedChanges()) { return;}         
+      if (!$scope.editorHasUnsavedChanges()) { return;}
       $scope.inprogress = true;
 
       Rendr.save($scope.library.libraryId, $scope.library.key, $scope.app.rendr.rendrId,

@@ -359,23 +359,19 @@ a {
         </ul>
     </div>
 
-    <!-- Included body assets -->
-    {% for f in environment['body_js'] %}
-        <script src="{{ f }}"></script>
-    {% end %}
-
     <!-- Include pre-loaded data if present -->
     {% if data %}
     <script>
-    $(window).load(function() {
-        rendr.viewState.library = {% raw data["library"] %};
-        rendr.viewState.rendr = {% raw data["rendr"] %};
-        history.replaceState(null, "", window.location.href.split("?")[0]);
-
-        rendr.viewState.library.key = "{{ data["key"] }}";
-        rendr.updateLibraryMenu();
-    });
+    window.rendrLibrary = {% raw data["library"] %};
+    window.rendrKey = "{{ data["key"] }}";
+    window.rendrId = {% raw data["rendr"] %};
+    history.replaceState(null, "", window.location.href.split("?")[0]);
     </script>
+    {% end %}
+
+    <!-- Included body assets -->
+    {% for f in environment['body_js'] %}
+        <script src="{{ f }}"></script>
     {% end %}
 </body>
 </html>

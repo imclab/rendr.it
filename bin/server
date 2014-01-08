@@ -114,8 +114,10 @@ ariables to be set.")
     # Application handler init
     app = rendr.CollectdLoggingApplication([
             (r"/min/(js|css)/(.*)", rendr.StaticBuild),
-            (r"/library/([^./]+)?", rendr.LibraryManager, {"db": db}),
-            (r"/rendr/([^./]+)/([^./]+)", rendr.RendrManager, {"db": db}),
+            (r"/library/([^./]+)?", rendr.LibraryManager,
+                {"db": db, "environment": environment}),
+            (r"/rendr/([^./]+)/([^./]+)", rendr.RendrManager,
+                {"db": db, "environment": environment}),
             (r"/.*\.(gif|png|jpg|html|json)", rendr.Renderer,
                 {"db": db, "timeout": opts.timeout, "port": opts.port,
                 "phantomjs": opts.phantomjs, "rasterize": rasterize_path,
