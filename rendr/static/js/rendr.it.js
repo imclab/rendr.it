@@ -771,10 +771,7 @@ var RendrItMod = angular.module('RendrIt', []).config(['$interpolateProvider', f
     };
 
     if (window.rendrLibrary) {
-      window.setTimeout(function() {
-        $scope.library =
-          Library.fromData(window.rendrLibrary, window.rendrKey);
-      }, 50);
+      $scope.library = Library.fromData(window.rendrLibrary, window.rendrKey);
     }
 
     // Load / Initialize options
