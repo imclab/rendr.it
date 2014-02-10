@@ -25,7 +25,7 @@
                     </ul>
                 </div>
 
-                <div id="library-menu" class="button ctl radius dropdown disabled" ng-class="{'disabled': !library.key}">
+                <div id="library-menu" class="button ctl radius dropdown" ng-class="{'disabled': !library.key}">
                     <span class="library-name" ng-bind="libraryName()" ></span>
                     <ul>
                       <li ng-repeat="rendr in library.rendrs" ng-class="{'disabled': inprogress, 'in-progress': inprogress}">
